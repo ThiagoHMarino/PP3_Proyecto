@@ -24,8 +24,10 @@ float Vehiculo::getPrecioBase() const {return precioBase;}
 void Vehiculo::setDisponible(bool a) {disponible=a;}
 void Vehiculo::setPrecioBase(float p) {precioBase=p;}
 void Vehiculo::mostrarInfo() {
+    cout << "=====================================" << endl;
     cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
     <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<<endl;
+    cout << "=====================================" << endl;
 }
 int Vehiculo::vivas=0;
 
@@ -33,20 +35,57 @@ int Vehiculo::vivas=0;
 Auto::Auto(string m, string pat, int a, float pB, int puer):Vehiculo(m,pat,a,pB),puertas(puer){}
 
 void Auto::mostrarInfo(){
+    cout << "=====================================" << endl;
     cout << "AUTO" << endl;
     cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
         <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<< " PUERTAS: "<< puertas <<endl;
+    cout << "=====================================" << endl;
 }
 
 //MOTO
-Moto::Moto(string m, string pat, int a, float pB, int cil):Vehiculo(m,p,a,pB),cilindradas(cil){}
+Moto::Moto(string m, string pat, int a, float pB, int cil):Vehiculo(m,pat,a,pB),cilindradas(cil){}
 
 void Moto::mostrarInfo(){
+    cout << "=====================================" << endl;
     cout << "MOTO" << endl;
     cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
         <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<< " CILINDRADAS: "<< cilindradas <<endl;
+    cout << "=====================================" << endl;
 }
 
+//CONTRATO
+Contrato::Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float costoBase):
+id_contrato(id),cliente(c),vehiculo(v),tiempoEstablecido(tiempoHoras),costo(costoBase){}
+
+Cliente Contrato::getCliente() const{return cliente;}
+
+//HISTORIAL
+
+void Historial::agregarContrato(Contrato *contratoAgregar) {
+    lista_contratos.push_back(contratoAgregar);
+}
+
+void Historial::mostrarContratoPorCliente(Cliente cliente) {
+    cout << "=====================================" << endl;
+    cout << "CONTRATOS DEL CLIENTE: " << cliente.getNombre() << ", " << cliente.getApellido() <<
+    ", DNI: " << cliente.getDni() << endl;
+
+    bool encontrado=false;
+
+    vector<Contrato*>::iterator it;
+    for(it=lista_contratos.begin();it!=lista_contratos.end();it++){
+        if((*it)->getCliente().getDni()==cliente.getDni()){
+            (*it)->mostrarInfo();
+            encontrado=true;
+        }
+    }
+
+    if(!encontrado){
+        cout << "No se encontro al cliente solicitado." << endl;
+    }
+
+    cout << "=====================================" << endl;
+}
 
 
 

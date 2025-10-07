@@ -85,6 +85,7 @@ private:
 public:
     Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float costoBase);
 
+    Cliente getCliente() const;
     void iniciarContrato();
     void cerrarContrato();
     void mostrarInfo() const;

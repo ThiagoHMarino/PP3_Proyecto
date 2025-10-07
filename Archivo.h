@@ -32,7 +32,7 @@ public:
 
     void setPrecioBase(float p);
     void setDisponible(bool a);
-    void mostrarInfo();
+    virtual void mostrarInfo();
 };
 
 
@@ -41,14 +41,17 @@ private:
     int cilindradas;
 public:
     Moto(string mar, string pat, int a, float pB, int cil);
+
+    void mostrarInfo() override;
 };
 
 class Auto: public Vehiculo{
 private:
     int puertas;
 public:
-    Auto(string mar, string pat, int a, float pB, bool d, int p);
+    Auto(string mar, string pat, int a, float pB, int puer);
 
+    void mostrarInfo() override;
 };
 
 class Cliente{

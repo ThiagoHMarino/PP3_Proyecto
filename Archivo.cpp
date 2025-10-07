@@ -15,7 +15,7 @@ void Cliente::mostrarInfo() const {
 }
 
 //VEHÍCULO
-Vehiculo::Vehiculo(string m, string p, int a, float pb):marca(m), patente(p), anio(a), precioBase(pb), disponible{true}{vivas++;}
+Vehiculo::Vehiculo(string m, string p, int a, float pB):marca(m), patente(p), anio(a), precioBase(pB), disponible{true}{vivas++;}
 string Vehiculo::getMarca() const {return marca;}
 string Vehiculo::getPatente() const {return patente;}
 int Vehiculo::getAnio() const {return anio;}
@@ -28,6 +28,25 @@ void Vehiculo::mostrarInfo() {
     <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<<endl;
 }
 int Vehiculo::vivas=0;
+
+//AUTO
+Auto::Auto(string m, string pat, int a, float pB, int puer):Vehiculo(m,pat,a,pB),puertas(puer){}
+
+void Auto::mostrarInfo(){
+    cout << "AUTO" << endl;
+    cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
+        <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<< " PUERTAS: "<< puertas <<endl;
+}
+
+//MOTO
+Moto::Moto(string m, string pat, int a, float pB, int cil):Vehiculo(m,p,a,pB),cilindradas(cil){}
+
+void Moto::mostrarInfo(){
+    cout << "MOTO" << endl;
+    cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
+        <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<< " CILINDRADAS: "<< cilindradas <<endl;
+}
+
 
 
 

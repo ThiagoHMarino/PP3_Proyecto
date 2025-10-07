@@ -3,4 +3,6 @@ project(PP3_Proyecto)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(PP3_Proyecto main.cpp)
+add_executable(PP3_Proyecto main.cpp
+        Archivo.h
+        Archivo.cpp)

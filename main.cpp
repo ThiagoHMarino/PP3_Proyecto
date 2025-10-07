@@ -1,6 +1,9 @@
 #include <iostream>
+#include <vector>
+#include "Archivo.h"
+
+using namespace std;
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
+
 }

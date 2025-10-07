@@ -98,5 +98,4 @@ public:
     void mostrarHistorial();
 };
 
-
 #endif //PP3_PROYECTO_ARCHIVO_H

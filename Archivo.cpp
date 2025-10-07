@@ -87,5 +87,27 @@ void Historial::mostrarContratoPorCliente(Cliente cliente) {
     cout << "=====================================" << endl;
 }
 
+void Historial::mostrarHistorial() {
+    cout << "=====================================" << endl;
+    cout << "HISTORIAL DE CONTRATOS" << endl;
+    cout << "Total de contratos: " << lista_contratos.size() << endl;
+    cout << "=====================================" << endl;
+
+    if (lista_contratos.empty()) {
+        cout << "No hay contratos registrados en el historial." << endl;
+        return;
+    }
+
+    vector<Contrato*>::iterator it;
+    int contador=0;
+    for (it = lista_contratos.begin(); it != lista_contratos.end(); it++) {
+        cout << "CONTRATO #" << contador << " ---" << endl;
+        (*it)->mostrarInfo();
+        contador++;
+    }
+
+    cout << "=====================================" << endl;
+}
+
 
 

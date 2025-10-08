@@ -11,7 +11,11 @@ string Cliente::getApellido() const {return apellido;}
 int Cliente::getEdad() const{return edad;}
 int Cliente::getDni() const {return dni;}
 void Cliente::mostrarInfo() const {
+        cout << "=====================================" << endl;
+        cout<<"CLIENTE:"<<endl;
     cout<<"Nombre: "<<nombre<< " Apellido: "<< apellido <<" Edad: "<<edad<<" Dni: "<<dni<<endl;
+    cout << "=====================================" << endl;
+
 }
 
 //VEHÍCULO
@@ -54,11 +58,50 @@ void Moto::mostrarInfo(){
 }
 
 //CONTRATO
-Contrato::Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float costoBase):
-id_contrato(id),cliente(c),vehiculo(v),tiempoEstablecido(tiempoHoras),costo(costoBase){}
+Contrato::Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float cargo):
+id_contrato(id),cliente(c),vehiculo(v),tiempoEstablecido(tiempoHoras), costo(0), cargoExtraporHora(cargo){}
 
 Cliente Contrato::getCliente() const{return cliente;}
+void Contrato::cerrarContrato(){
+    fin = system_clock::now();
+    duration<float> tiempoReal=fin - inicio;
+    duration<float> exceso=tiempoReal-tiempoEstablecido;
 
+    if(exceso.count() > 0){
+        float HorasExtra=exceso.count() / 3600.f;
+        costo+=HorasExtra*cargoExtraporHora;
+        cout << "=====================================" << endl;
+        cout << "Tiempo excedido: " << HorasExtra << " horas" << endl;
+        cout << "Cargo adicional: $" << costo << endl;
+    }
+    float HorasEstablecidas=tiempoEstablecido.count() / 3600.f;
+    costo+=vehiculo->getPrecioBase()*HorasEstablecidas;
+    cout << "Contrato cerrado. Costo total: $" << costo << endl;
+    cout << "=====================================" << endl;
+}
+void Contrato::mostrarInfo() const {
+
+    cout << "=====================================" << endl;
+    cout << "CONTRATO: " <<id_contrato<< endl;
+    cout<< "Vehiculo alquilado"<<endl;
+    vehiculo->mostrarInfo();
+    cout<<endl;
+
+    cout<<"CLIENTE: "<<endl;
+    cliente.mostrarInfo();
+    cout<<endl;
+
+    cout<<"DETALLES:"<<endl;
+
+    cout<<"Tiempo establecido: "<< (tiempoEstablecido.count() / 3600.0f) << " horas" << endl;
+    cout<<endl;
+
+    duration<float> tiempoReal = fin - inicio;
+    cout << "Duración real: " << (tiempoReal.count() / 3600.0f) << " horas" << endl;
+
+    cout << "Costo total: $" << costo << endl;
+    cout << "=====================================" << endl;
+}
 //HISTORIAL
 
 void Historial::agregarContrato(Contrato *contratoAgregar) {

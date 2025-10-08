@@ -82,8 +82,9 @@ private:
     time_point<system_clock> inicio;
     time_point<system_clock> fin;
     float costo;
+    float cargoExtraporHora;
 public:
-    Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float costoBase);
+    Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float cargo);
 
     Cliente getCliente() const;
     void iniciarContrato();

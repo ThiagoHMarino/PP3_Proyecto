@@ -26,7 +26,7 @@ void funcion_menu(){
             if (i == seleccion) {
                 attron(A_REVERSE); // Resalta la opción seleccionada
             }
-            mvprintw(i + 2, 2, opciones[i]);
+            mvprintw(i + 2, 2,"%s", opciones[i]);
             if (i == seleccion) {
                 attroff(A_REVERSE);
             }

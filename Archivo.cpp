@@ -73,7 +73,7 @@ void Historial::mostrarContratoPorCliente(Cliente cliente) {
     bool encontrado=false;
 
     vector<Contrato*>::iterator it;
-    for(it=lista_contratos.begin();it!=lista_contratos.end();it++){
+    for(it=lista_contratos.begin();it!=lista_contratos.end();it++){  //Mepa que en el for va un (auto it = lista_contratos;...) 
         if((*it)->getCliente().getDni()==cliente.getDni()){
             (*it)->mostrarInfo();
             encontrado=true;

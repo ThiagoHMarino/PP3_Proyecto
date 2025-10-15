@@ -6,5 +6,6 @@
 using namespace std;
 
 int main() {
-
+    funcion_menu();
+    return 0;
 }

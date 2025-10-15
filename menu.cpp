@@ -168,8 +168,3 @@ void funcion_menu(){
 }
 }
 }
-
-int main() {
-    funcion_menu();
-    return 0;
-}

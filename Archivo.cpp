@@ -20,12 +20,6 @@ void Cliente::mostrarInfo() const {
 
 //VEHÍCULO
 Vehiculo::Vehiculo(string m, string p, int a, float pB):marca(m), patente(p), anio(a), precioBase(pB), disponible{true}{vivas++;}
-
-//AGREGUE ESTO
-Vehiculo::~Vehiculo() {
-    vivas--;
-}
-
 string Vehiculo::getMarca() const {return marca;}
 string Vehiculo::getPatente() const {return patente;}
 int Vehiculo::getAnio() const {return anio;}
@@ -68,16 +62,6 @@ Contrato::Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float carg
 id_contrato(id),cliente(c),vehiculo(v),tiempoEstablecido(tiempoHoras), costo(0), cargoExtraporHora(cargo){}
 
 Cliente Contrato::getCliente() const{return cliente;}
-
-//AGREGUE ESTO
-void Contrato::iniciarContrato() {
-    inicio = system_clock::now();
-    vehiculo->setDisponible(false);
-    cout << "=====================================" << endl;
-    cout << "Contrato #" << id_contrato << " iniciado." << endl;
-    cout << "=====================================" << endl;
-}
-
 void Contrato::cerrarContrato(){
     fin = system_clock::now();
     duration<float> tiempoReal=fin - inicio;
@@ -132,7 +116,7 @@ void Historial::mostrarContratoPorCliente(Cliente cliente) {
     bool encontrado=false;
 
     vector<Contrato*>::iterator it;
-    for(it=lista_contratos.begin();it!=lista_contratos.end();it++){  //Mepa que en el for va un (auto it = lista_contratos;...)
+    for(it=lista_contratos.begin();it!=lista_contratos.end();it++){  //Mepa que en el for va un (auto it = lista_contratos;...) 
         if((*it)->getCliente().getDni()==cliente.getDni()){
             (*it)->mostrarInfo();
             encontrado=true;

@@ -20,6 +20,7 @@ void Cliente::mostrarInfo() const {
 
 //VEHÍCULO
 Vehiculo::Vehiculo(string m, string p, int a, float pB):marca(m), patente(p), anio(a), precioBase(pB), disponible{true}{vivas++;}
+Vehiculo::~Vehiculo(){vivas--;}
 string Vehiculo::getMarca() const {return marca;}
 string Vehiculo::getPatente() const {return patente;}
 int Vehiculo::getAnio() const {return anio;}

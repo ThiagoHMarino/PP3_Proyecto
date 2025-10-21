@@ -19,20 +19,23 @@ public:
     void crearTablas(); // Metodo que crea todas las tablas
 
     // Métodos para Vehiculo
+    /*
     bool guardarVehiculo(Vehiculo* vehiculo);
     bool guardarMoto(Moto* moto);
     bool guardarAuto(Auto* automovil);
     vector<Vehiculo*> cargarVehiculos();
     vector<Vehiculo*> cargarVehiculosDisponibles();
     bool actualizarDisponibilidadVehiculo(string patente, bool disponible);
+    */
 
     // Métodos para Clientes
     bool guardarCliente(Cliente cliente);
-    vector<Cliente> cargarClientes();
-    Cliente* buscarClientePorDNI(int dni);
+    //vector<Cliente> cargarClientes();
+    //Cliente* buscarClientePorDNI(int dni);
 
     // Métodos para Contratos
     bool guardarContrato(Contrato contrato);
+    /*
     vector<Contrato> cargarContratos();
     vector<Contrato> cargarContratosActivos();
     bool finalizarContrato(int id_contrato, float costo_final);
@@ -40,6 +43,7 @@ public:
     // Métodos auxiliares
     Vehiculo* crearVehiculoDesdeBD(string tipo, string marca, string patente,
     int anio, float precio_base, bool disponible,int cilindradas, int puertas);
+    */
 
 };
 

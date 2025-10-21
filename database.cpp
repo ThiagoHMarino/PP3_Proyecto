@@ -72,7 +72,7 @@ void DataBase::crearTablas() {
     sqlite3_exec() recibe 5 parametros:
     - Puntero a la base de datos.
     - Sentencia SQL a ejecutar.
-    - Funcion para procesar resultados. callback -> se usa en consultas con SELECT.
+    - Funcion para procesar resultados. callback (se usa en consultas con SELECT.)
     - Datos que pasas al callback.
     - Mensaje de error (si ocurre).
 
@@ -88,26 +88,81 @@ void DataBase::crearTablas() {
 
     if(sqlite3_exec(datab, sql_vehiculos.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK){
         cout << "Error creando tabla Vehiculos: " << errorMsg << endl;
-        sqlite3_free(errorMsg); //libera la memoria que SQLite uso para resolver el mensaje.
+        sqlite3_free(errorMsg);
     }else{
         cout << "Tabla Vehiculos verificada y creada correctamente." << endl;
     }
 
     if(sqlite3_exec(datab, sql_contrato.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK){
         cout << "Error creando tabla Contrato: " << errorMsg << endl;
-        sqlite3_free(errorMsg); //libera la memoria que SQLite uso para resolver el mensaje.
+        sqlite3_free(errorMsg);
     }else{
         cout << "Tabla Contrato verificada y creada correctamente." << endl;
     }
-
-
-
 
     cout << "---------------------------------------------" << endl;
     cout << "Todas las tablas fueron verificadas o creadas." << endl;
     cout << "---------------------------------------------" << endl;
 
 }
+
+bool DataBase :: tablasExisten(){}
+
+//Metodos para Cliente
+bool DataBase :: guardarCliente(Cliente cliente){
+
+    if (datab == nullptr) { // Chequeo si existe la BD
+        cout << "Error: Base de datos no inicializada." << endl;
+        return;
+    }
+
+    //Verifica si el cliente existe en la tabla.
+    Cliente *existe = buscarClientePorDNI(cliente.getDni());
+    if(existe!=nullptr){
+    delete existe;
+    cout<<"El cliente de DNI: "<<cliente.getDni<<" Ya se encuentra en la BD"<<endl;
+    return false;
+    }
+    //Si no existe:
+    string sql = "INSERT INTO Cliente (dni, nombre, apellido, edad) VALUES (?, ?, ?, ?);";
+    sqlite3_stmt* stmt; //Sentencia preparada. 'Compilar' tu SQL antes de ejecutarlo.
+
+    /*
+    sqlite3_prepare_v2() recibe 5 parametros:
+    - Puntero a la bd.
+    - Tu consulta SQL. -> el INSERT
+    - Tamaño del SQL, detectar hasta el /0
+    - Sentencia preparada
+    - Puntero al SQL no usado (rara vez se usa)
+    */
+
+//Verifico que se pueda agregar a la tabla:
+    if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        cout << "Error preparando SQL: " << sqlite3_errmsg(datab) << endl;
+        return false;
+    }
+
+// Agrego a la tabla los datos reemplazando los marcadores ? por los datos
+    sqlite3_bind_int(stmt, 1, cliente.getDni());//posicion 1
+    sqlite3_bind_text(stmt, 2, cliente.getNombre().c_str(), -1, SQLITE_TRANSIENT);//posicion 2
+    sqlite3_bind_text(stmt, 3, cliente.getApellido().c_str(), -1, SQLITE_TRANSIENT);//posicion 3
+    sqlite3_bind_int(stmt, 4, cliente.getEdad());//posicion 4
+
+//Chequeo que el cliente se haya guardado de manera santisfactoria
+    bool resultado = (sqlite3_step(stmt) == SQLITE_DONE); //retorna SQLITE_DONE si se inserto correctamente.
+
+    //libera los recursos usados por la estructura
+    sqlite3_finalize(stmt);
+
+    if (resultado) { //si es true
+        cout << "Cliente guardado: " << cliente.getNombre() << " " << cliente.getApellido() << endl;
+    }
+
+    return resultado;
+}
+
+bool DataBase :: buscarClientePorDNI(int dni){
+    if(datab == nullptr) return nullptr
 
 //Destructor
 DataBase :: ~DataBase(){

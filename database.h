@@ -19,7 +19,7 @@ public:
     void crearTablas(); // Metodo que crea todas las tablas
     bool tablasExisten(); // Para verificar si ya existen
 
-    // Métodos para Vehiculos
+    // Métodos para Vehiculo
     bool guardarVehiculo(Vehiculo* vehiculo);
     bool guardarMoto(Moto* moto);
     bool guardarAuto(Auto* automovil);

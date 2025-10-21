@@ -2,7 +2,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <iostream>
-
+//
 DataBase :: DataBase(string nBD): datab(nullptr), nombreBD(nBD) {
     int retorno = sqlite3_open(nombreBD.c_str(), &datab);
 

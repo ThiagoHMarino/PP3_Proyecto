@@ -7,6 +7,18 @@ add_executable(PP3_Proyecto main.cpp
         Archivo.h
         Archivo.cpp
         menu.cpp
-        menu.h)
+        menu.h
+        database.h
+        database.cpp
+)
 
-target_link_libraries(PP3_Proyecto ncurses)
+# Encontrar SQLite3 para la BD
+find_package(SQLite3 REQUIRED)
+
+# Vincular librerías con la misma sintaxis (todas con PRIVATE)
+target_link_libraries(PP3_Proyecto
+        PRIVATE
+        ncurses
+        SQLite::SQLite3
+)
+

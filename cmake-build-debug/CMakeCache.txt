@@ -139,6 +139,9 @@ CMAKE_OSX_DEPLOYMENT_TARGET:STRING=
 // inside the indicated SDK.
 CMAKE_OSX_SYSROOT:PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk
 
+//No help, variable specified on the command line.
+CMAKE_PREFIX_PATH:UNINITIALIZED=/usr/local/opt/sqlite
+
 //Value Computed by CMake
 CMAKE_PROJECT_DESCRIPTION:STATIC=
 
@@ -221,6 +224,12 @@ PP3_Proyecto_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 PP3_Proyecto_SOURCE_DIR:STATIC=/Users/thiagomarino/CLionProjects/PP3_ProyectoN
+
+//Path to a file.
+SQLite3_INCLUDE_DIR:PATH=/usr/local/opt/sqlite/include
+
+//Path to a library.
+SQLite3_LIBRARY:FILEPATH=/usr/local/opt/sqlite/lib/libsqlite3.dylib
 
 
 ########################
@@ -360,4 +369,10 @@ CMAKE_TAPI-ADVANCED:INTERNAL=1
 CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
+//Details about finding SQLite3
+FIND_PACKAGE_MESSAGE_DETAILS_SQLite3:INTERNAL=[/usr/local/opt/sqlite/include][/usr/local/opt/sqlite/lib/libsqlite3.dylib][v3.50.4()]
+//ADVANCED property for variable: SQLite3_INCLUDE_DIR
+SQLite3_INCLUDE_DIR-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: SQLite3_LIBRARY
+SQLite3_LIBRARY-ADVANCED:INTERNAL=1
 

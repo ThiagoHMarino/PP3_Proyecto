@@ -94,6 +94,7 @@ public:
     ~Contrato(){};
 };
 
+
 class Historial{
 private:
     vector<Contrato*> lista_contratos;
@@ -101,6 +102,23 @@ public:
     void agregarContrato(Contrato * contratoAgregar);
     void mostrarContratoPorCliente(Cliente cliente);
     void mostrarHistorial();
+};
+
+class SistemaAlquiler{
+private:
+    vector<Cliente*> clientes;
+    vector<Vehiculo*> vehiculos;
+    Historial historial;
+    vector<Contrato*> contratos_activos;
+public:
+    bool registrarCliente(string nombre, string apellido, int edad, int dni);
+    bool registrarVehiculo(Vehiculo* v);
+    Contrato* crearNuevoContrato(int dni, string patente, float horas);
+    bool cerrarContrato(int id_contrato);
+    void listarVehiculosDisponibles();
+    void listarContratos();
+    void listarClientesRegistrados();
+
 };
 
 #endif //PP3_PROYECTO_ARCHIVO_H

@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 
+//Constructor
 DataBase :: DataBase(string nBD): datab(nullptr), nombreBD(nBD) {
     int retorno = sqlite3_open(nombreBD.c_str(), &datab);
 
@@ -15,6 +16,26 @@ DataBase :: DataBase(string nBD): datab(nullptr), nombreBD(nBD) {
     }
 }
 
+//Crear tablas
+void DataBase::crearTablas() {
+
+    if (datab == nullptr) {
+        cout << "Error: Base de datos no inicializada." << endl;
+        return;
+    }
+
+
+// Tabla cliente:
+    string sql_cliente = "CREATE TABLE IF NOT EXISTS Cliente ("
+        "dni INTEGER PRIMARY KEY, "
+        "nombre TEXT NOT NULL, "
+        "apellido TEXT NOT NULL, "
+        "edad INTEGER NOT NULL"
+        ");";
+
+}
+
+//Destructor
 DataBase :: ~DataBase(){
     if (datab!=nullptr) {
         sqlite3_close(datab);

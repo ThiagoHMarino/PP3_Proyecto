@@ -6,6 +6,10 @@
 //Constructor
 DataBase :: DataBase(string nBD): datab(nullptr), nombreBD(nBD) {
     int retorno = sqlite3_open(nombreBD.c_str(), &datab);
+    /*
+    .c_str() se utiliza para convertir el string en un
+    array de caracteres, ya que sqlite3_open() espera un char* y no un string.
+    */
 
     if(retorno!=SQLITE_OK){ //SQLITE_OK: operacion de exito.
         //hubo error:
@@ -59,7 +63,17 @@ void DataBase::crearTablas() {
     ");";
 
     char* errorMsg = nullptr; //puntero a cadena q devuelve SQLite para devolver msj de error.
+    // Si la consulta sale mal -> apunta a una cadena.
+    // Si la consulta sale bien -> sigue apuntando a nullptr.
 
+    /*
+    sqlite3_exec() recibe 5 parametros:
+    - Puntero a la base de datos.
+    - Sentencia SQL a ejecutar.
+    - Funcion para procesar resultados. callback
+    - Datos que pasas al callback.
+    - Mensaje de error (si ocurre).
+    */
 
 
 

@@ -20,7 +20,9 @@ DataBase :: DataBase(string nBD): datab(nullptr), nombreBD(nBD) {
     }
 }
 
-//Crear tablas
+// Crear tablas
+// Primera ejecucion se crean las tablas.
+// Ejecuciones posteriores se verifican que existen gracias al 'IF NOT EXISTS'
 void DataBase::crearTablas() {
 
     if (datab == nullptr) {
@@ -70,10 +72,34 @@ void DataBase::crearTablas() {
     sqlite3_exec() recibe 5 parametros:
     - Puntero a la base de datos.
     - Sentencia SQL a ejecutar.
-    - Funcion para procesar resultados. callback
+    - Funcion para procesar resultados. callback -> se usa en consultas con SELECT.
     - Datos que pasas al callback.
     - Mensaje de error (si ocurre).
+
+    Devuelve un entero del 0 al 8. 0->BIEN , el resto son distintos inconvenientes.
     */
+
+    if(sqlite3_exec(datab, sql_cliente.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK){
+        cout << "Error creando tabla Cliente: " << errorMsg << endl;
+        sqlite3_free(errorMsg); //libera la memoria que SQLite uso para resolver el mensaje.
+    }else{
+        cout << "Tabla Cliente verificada y creada correctamente." << endl;
+    }
+
+    if(sqlite3_exec(datab, sql_vehiculos.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK){
+        cout << "Error creando tabla Vehiculos: " << errorMsg << endl;
+        sqlite3_free(errorMsg); //libera la memoria que SQLite uso para resolver el mensaje.
+    }else{
+        cout << "Tabla Vehiculos verificada y creada correctamente." << endl;
+    }
+
+    if(sqlite3_exec(datab, sql_contrato.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK){
+        cout << "Error creando tabla Contrato: " << errorMsg << endl;
+        sqlite3_free(errorMsg); //libera la memoria que SQLite uso para resolver el mensaje.
+    }else{
+        cout << "Tabla Contrato verificada y creada correctamente." << endl;
+    }
+
 
 
 

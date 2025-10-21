@@ -18,10 +18,9 @@ void Cliente::mostrarInfo() const {
 
 }
 
-//VEHÍCULO
+//VEHÍCULO------------------------------------------------------------------------------------------------------------------------------------
 Vehiculo::Vehiculo(string m, string p, int a, float pB):marca(m), patente(p), anio(a), precioBase(pB), disponible{true}{vivas++;}
 
-//AGREGUE ESTO
 Vehiculo::~Vehiculo() {
     vivas--;
 }
@@ -40,6 +39,7 @@ void Vehiculo::mostrarInfo() {
     cout << "=====================================" << endl;
 }
 int Vehiculo::vivas=0;
+//------------------------------------------------------------------------------------------------------------------------------------
 
 //AUTO
 Auto::Auto(string m, string pat, int a, float pB, int puer):Vehiculo(m,pat,a,pB),puertas(puer){}

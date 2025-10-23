@@ -3,6 +3,7 @@
 #include "Archivo.h"
 #include "menu.h"
 #include "database.h"
+#include "sqlite3.h"
 
 using namespace std;
 

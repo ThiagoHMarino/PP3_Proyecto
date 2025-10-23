@@ -60,7 +60,7 @@ void DataBase::crearTablas() {
 
     // Tabla contrato: registra todos los contratos realizados
     string sql_contrato = "CREATE TABLE IF NOT EXISTS Contrato ("
-        "id_contrato INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "id_contrato INTEGER PRIMARY KEY AUTOINCREMENT, " //IDs consecutivos.
         "dni_cliente INTEGER NOT NULL, "
         "patente_vehiculo TEXT NOT NULL, "
         "tiempo_establecido REAL NOT NULL, " //REAL: Variable flotante de 4 bytes.

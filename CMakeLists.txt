@@ -10,6 +10,7 @@ add_executable(PP3_Proyecto main.cpp
         menu.h
         database.h
         database.cpp
+        main.cpp
 )
 
 # Encontrar SQLite3 para la BD

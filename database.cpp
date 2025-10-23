@@ -395,16 +395,18 @@ bool DataBase::guardarContrato(Contrato contrato) {
     }
 
     Cliente cliente = contrato.getCliente();
+    Vehiculo* vehiculo = contrato.getVehiculo();
+    float tiempoSegundos = contrato.getTiempoEstablecido().count();
 
     sqlite3_bind_int(stmt, 1, cliente.getDni());
-    // sqlite3_bind_text(stmt, 2, contrato.getVehiculo()->getPatente().c_str(), -1, SQLITE_TRANSIENT);
-    // sqlite3_bind_double(stmt, 3, contrato.getTiempoEstablecido());
+    sqlite3_bind_text(stmt, 2, vehiculo->getPatente().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 3, tiempoSegundos);
 
     bool resultado = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);
 
     if (resultado) {
-        cout << "Contrato guardado exitosamente." << endl;
+        cout << "Contrato guardado exitosamente en BD." << endl;
     }
 
     return resultado;

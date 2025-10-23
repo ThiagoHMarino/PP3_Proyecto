@@ -8,7 +8,10 @@
 #include <chrono>
 
 using namespace std;
-using namespace std::chrono; //para no escribir el prefijo en chrono.
+using namespace std::chrono;
+
+// Forward declaration
+class DataBase;
 
 class Vehiculo{
 protected:
@@ -21,7 +24,6 @@ protected:
 
 public:
     Vehiculo(string m, string p, int a, float pB);
-
     virtual ~Vehiculo();
 
     string getMarca()const;
@@ -34,7 +36,6 @@ public:
     void setDisponible(bool a);
     virtual void mostrarInfo();
 };
-
 
 class Moto: public Vehiculo{
 private:
@@ -80,22 +81,26 @@ private:
     int id_contrato;
     Cliente cliente;
     Vehiculo* vehiculo;
-    duration<float> tiempoEstablecido;  // duración en segundos
+    duration<float> tiempoEstablecido;
     time_point<system_clock> inicio;
     time_point<system_clock> fin;
     float costo;
     float cargoExtraporHora;
 public:
-    Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float cargo);
+    Contrato(int id, Cliente c, Vehiculo* v, float tiempoSegundos, float cargo);
 
     Cliente getCliente() const;
+    int getId() const;
+    Vehiculo* getVehiculo() const;
+    float getCosto() const;
+    duration<float> getTiempoEstablecido() const;
+
     void iniciarContrato();
     void cerrarContrato();
     void mostrarInfo() const;
 
     ~Contrato(){};
 };
-
 
 class Historial{
 private:
@@ -112,15 +117,31 @@ private:
     vector<Vehiculo*> vehiculos;
     Historial historial;
     vector<Contrato*> contratos_activos;
+    DataBase* database;
+    int proximo_id_contrato;
+
+    void cargarDatos();
+
 public:
+    SistemaAlquiler(DataBase* db);
+    ~SistemaAlquiler();
+
     bool registrarCliente(string nombre, string apellido, int edad, int dni);
     bool registrarVehiculo(Vehiculo* v);
     Contrato* crearNuevoContrato(int dni, string patente, float horas);
     bool cerrarContrato(int id_contrato);
+
     void listarVehiculosDisponibles();
+    void listarTodosVehiculos();
     void listarContratos();
     void listarClientesRegistrados();
+    void mostrarHistorialCompleto();
+    void mostrarHistorialCliente(int dni);
 
+    // Métodos auxiliares
+    Cliente* buscarCliente(int dni);
+    Vehiculo* buscarVehiculo(string patente);
+    Contrato* buscarContratoActivo(int id);
 };
 
 #endif //PP3_PROYECTO_ARCHIVO_H

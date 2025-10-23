@@ -3,6 +3,7 @@
 #include "Archivo.h"
 #include <iostream>
 #include <vector>
+#include "database.h"
 
 //CLIENTE
 Cliente :: Cliente(string n, string a, int e, int d):nombre(n), apellido(a), edad(e), dni(d){}
@@ -121,6 +122,14 @@ void Contrato::mostrarInfo() const {
     cout << "Costo total: $" << costo << endl;
     cout << "=====================================" << endl;
 }
+//METODOS ADICIONALES CONTRATO
+
+int Contrato::getId() const { return id_contrato; }
+Vehiculo* Contrato::getVehiculo() const { return vehiculo; }
+float Contrato::getCosto() const { return costo; }
+duration<float> Contrato::getTiempoEstablecido() const { return tiempoEstablecido; }
+
+
 //HISTORIAL
 
 void Historial::agregarContrato(Contrato *contratoAgregar) {
@@ -171,5 +180,229 @@ void Historial::mostrarHistorial() {
     cout << "=====================================" << endl;
 }
 
+//=============================================================================
+// SISTEMA ALQUILER - IMPLEMENTACIÓN COMPLETA
+//=============================================================================
 
+SistemaAlquiler::SistemaAlquiler(DataBase* db) : database(db), proximo_id_contrato(1) {
+    cargarDatos();
+}
 
+SistemaAlquiler::~SistemaAlquiler() {
+    for (Cliente* c : clientes) {
+        delete c;
+    }
+    for (Vehiculo* v : vehiculos) {
+        delete v;
+    }
+    for (Contrato* c : contratos_activos) {
+        delete c;
+    }
+}
+
+void SistemaAlquiler::cargarDatos() {
+    cout << "Cargando datos desde la base de datos..." << endl;
+    clientes = database->cargarClientes();
+    cout << "Clientes cargados: " << clientes.size() << endl;
+    vehiculos = database->cargarVehiculos();
+    cout << "Vehiculos cargados: " << vehiculos.size() << endl;
+}
+
+bool SistemaAlquiler::registrarCliente(string nombre, string apellido, int edad, int dni) {
+    Cliente nuevoCliente(nombre, apellido, edad, dni);
+
+    if (database->guardarCliente(nuevoCliente)) {
+        clientes.push_back(new Cliente(nombre, apellido, edad, dni));
+        return true;
+    }
+    return false;
+}
+
+bool SistemaAlquiler::registrarVehiculo(Vehiculo* v) {
+    if (v == nullptr) {
+        cout << "Error: Vehiculo nulo." << endl;
+        return false;
+    }
+
+    if (database->guardarVehiculo(v)) {
+        vehiculos.push_back(v);
+        return true;
+    }
+
+    delete v;
+    return false;
+}
+
+Contrato* SistemaAlquiler::crearNuevoContrato(int dni, string patente, float horas) {
+    Cliente* cliente = buscarCliente(dni);
+    if (cliente == nullptr) {
+        cout << "Error: Cliente con DNI " << dni << " no encontrado." << endl;
+        return nullptr;
+    }
+
+    Vehiculo* vehiculo = buscarVehiculo(patente);
+    if (vehiculo == nullptr) {
+        cout << "Error: Vehiculo con patente " << patente << " no encontrado." << endl;
+        return nullptr;
+    }
+
+    if (!vehiculo->getActivo()) {
+        cout << "Error: Vehiculo no disponible." << endl;
+        return nullptr;
+    }
+
+    float horasEnSegundos = horas * 3600.0f;
+    Contrato* nuevoContrato = new Contrato(
+        proximo_id_contrato++,
+        *cliente,
+        vehiculo,
+        horasEnSegundos,
+        100.0f
+    );
+
+    nuevoContrato->iniciarContrato();
+    database->actualizarDisponibilidadVehiculo(patente, false);
+    database->guardarContrato(*nuevoContrato);
+
+    contratos_activos.push_back(nuevoContrato);
+    vehiculo->setDisponible(false);
+
+    return nuevoContrato;
+}
+
+bool SistemaAlquiler::cerrarContrato(int id_contrato) {
+    Contrato* contrato = buscarContratoActivo(id_contrato);
+
+    if (contrato == nullptr) {
+        cout << "Error: Contrato #" << id_contrato << " no encontrado." << endl;
+        return false;
+    }
+
+    contrato->cerrarContrato();
+
+    string patente = contrato->getVehiculo()->getPatente();
+    float costo = contrato->getCosto();
+
+    database->finalizarContrato(id_contrato, costo);
+    database->actualizarDisponibilidadVehiculo(patente, true);
+
+    Vehiculo* vehiculo = buscarVehiculo(patente);
+    if (vehiculo != nullptr) {
+        vehiculo->setDisponible(true);
+    }
+
+    historial.agregarContrato(contrato);
+
+    for (size_t i = 0; i < contratos_activos.size(); i++) {
+        if (contratos_activos[i]->getId() == id_contrato) {
+            contratos_activos.erase(contratos_activos.begin() + i);
+            break;
+        }
+    }
+
+    cout << "Contrato #" << id_contrato << " cerrado exitosamente." << endl;
+    return true;
+}
+
+void SistemaAlquiler::listarVehiculosDisponibles() {
+    cout << "=====================================" << endl;
+    cout << "VEHICULOS DISPONIBLES" << endl;
+    cout << "=====================================" << endl;
+
+    int contador = 0;
+    for (Vehiculo* v : vehiculos) {
+        if (v->getActivo()) {
+            v->mostrarInfo();
+            contador++;
+        }
+    }
+
+    if (contador == 0) {
+        cout << "No hay vehiculos disponibles." << endl;
+    } else {
+        cout << "Total disponibles: " << contador << endl;
+    }
+    cout << "=====================================" << endl;
+}
+
+void SistemaAlquiler::listarTodosVehiculos() {
+    cout << "=====================================" << endl;
+    cout << "TODOS LOS VEHICULOS" << endl;
+    cout << "=====================================" << endl;
+
+    for (Vehiculo* v : vehiculos) {
+        v->mostrarInfo();
+    }
+
+    cout << "Total vehiculos: " << vehiculos.size() << endl;
+    cout << "=====================================" << endl;
+}
+
+void SistemaAlquiler::listarContratos() {
+    cout << "=====================================" << endl;
+    cout << "CONTRATOS ACTIVOS" << endl;
+    cout << "=====================================" << endl;
+
+    if (contratos_activos.empty()) {
+        cout << "No hay contratos activos." << endl;
+    } else {
+        for (Contrato* c : contratos_activos) {
+            c->mostrarInfo();
+        }
+        cout << "Total contratos activos: " << contratos_activos.size() << endl;
+    }
+    cout << "=====================================" << endl;
+}
+
+void SistemaAlquiler::listarClientesRegistrados() {
+    cout << "=====================================" << endl;
+    cout << "CLIENTES REGISTRADOS" << endl;
+    cout << "=====================================" << endl;
+
+    for (Cliente* c : clientes) {
+        c->mostrarInfo();
+    }
+
+    cout << "Total clientes: " << clientes.size() << endl;
+    cout << "=====================================" << endl;
+}
+
+void SistemaAlquiler::mostrarHistorialCompleto() {
+    historial.mostrarHistorial();
+}
+
+void SistemaAlquiler::mostrarHistorialCliente(int dni) {
+    Cliente* cliente = buscarCliente(dni);
+    if (cliente != nullptr) {
+        historial.mostrarContratoPorCliente(*cliente);
+    } else {
+        cout << "Cliente no encontrado." << endl;
+    }
+}
+
+Cliente* SistemaAlquiler::buscarCliente(int dni) {
+    for (Cliente* c : clientes) {
+        if (c->getDni() == dni) {
+            return c;
+        }
+    }
+    return nullptr;
+}
+
+Vehiculo* SistemaAlquiler::buscarVehiculo(string patente) {
+    for (Vehiculo* v : vehiculos) {
+        if (v->getPatente() == patente) {
+            return v;
+        }
+    }
+    return nullptr;
+}
+
+Contrato* SistemaAlquiler::buscarContratoActivo(int id) {
+    for (Contrato* c : contratos_activos) {
+        if (c->getId() == id) {
+            return c;
+        }
+    }
+    return nullptr;
+}

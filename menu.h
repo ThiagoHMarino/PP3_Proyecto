@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <string>
-#include <ncurses.h>
+#include <curses.h>
 
 //**********************  definicion de funciones modulares para el menu *************************/
 

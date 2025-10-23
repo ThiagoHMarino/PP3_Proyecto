@@ -26,7 +26,7 @@ int main() {
     cout << endl;
 
     // 3. Probar inserción de clientes
-    cout << "3. PROBANDO INSERCIÓN DE CLIENTES..." << endl;
+    cout << "3. PROBANDO INSERCION DE CLIENTES..." << endl;
     Cliente cliente1("Juan", "Pérez", 30, 12345678);
     Cliente cliente2("María", "González", 25, 87654321);
     Cliente cliente3("Pedro", "Martínez", 40, 11223344);
@@ -41,7 +41,7 @@ int main() {
     cout << endl;
 
     // 4. Probar búsqueda de cliente
-    cout << "4. PROBANDO BÚSQUEDA DE CLIENTE..." << endl;
+    cout << "4. PROBANDO BUSQUEDA DE CLIENTE..." << endl;
     Cliente* encontrado = db.buscarClientePorDNI(12345678);
     if (encontrado != nullptr) {
         cout << "Cliente encontrado:" << endl;
@@ -53,7 +53,7 @@ int main() {
     cout << endl;
 
     // 5. Probar búsqueda de cliente inexistente
-    cout << "5. PROBANDO BÚSQUEDA DE CLIENTE INEXISTENTE..." << endl;
+    cout << "5. PROBANDO BUSQUEDA DE CLIENTE INEXISTENTE..." << endl;
     Cliente* noExiste = db.buscarClientePorDNI(99999999);
     if (noExiste == nullptr) {
         cout << "Correcto: Cliente no encontrado (como se esperaba)" << endl;
@@ -64,7 +64,7 @@ int main() {
     cout << endl;
 
     // 6. Probar inserción duplicada
-    cout << "6. PROBANDO INSERCIÓN DUPLICADA..." << endl;
+    cout << "6. PROBANDO INSERCION DUPLICADA..." << endl;
     Cliente clienteDuplicado("Juan", "Pérez", 30, 12345678);
     bool duplicado = db.guardarCliente(clienteDuplicado);
     cout << "Resultado (debería ser false): " << (duplicado ? "ERROR - Se insertó duplicado" : "OK - Se rechazó duplicado") << endl;
@@ -81,7 +81,7 @@ int main() {
     cout << endl;
 
     // 8. Probar inserción de vehículos
-    cout << "8. PROBANDO INSERCIÓN DE VEHÍCULOS..." << endl;
+    cout << "8. PROBANDO INSERCION DE VEHICULOS..." << endl;
 
     // Crear una moto
     Moto* moto1 = new Moto("Honda", "ABC123", 2020, 500.0, 150);
@@ -95,7 +95,7 @@ int main() {
     cout << endl;
 
     // 9. Probar actualización de disponibilidad
-    cout << "9. PROBANDO ACTUALIZACIÓN DE DISPONIBILIDAD..." << endl;
+    cout << "9. PROBANDO ACTUALIZACION DE DISPONIBILIDAD..." << endl;
     bool act = db.actualizarDisponibilidadVehiculo("ABC123", false);
     cout << "Resultado actualización: " << (act ? "OK" : "ERROR") << endl;
     cout << endl;

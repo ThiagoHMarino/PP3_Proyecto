@@ -11,15 +11,12 @@ add_executable(PP3_Proyecto
         menu.h
         database.h
         database.cpp
-        sqlite3.c          # el código fuente de SQLite
+        sqlite3.c
 )
 
 target_include_directories(PP3_Proyecto PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}   # donde está sqlite3.h
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(PP3_Proyecto
-        PRIVATE
-        ncurses
-)
-
+find_package(unofficial-pdcurses CONFIG REQUIRED)
+target_link_libraries(PP3_Proyecto PRIVATE unofficial::pdcurses::pdcurses)

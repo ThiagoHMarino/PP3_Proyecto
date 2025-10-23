@@ -42,6 +42,7 @@ private:
 public:
     Moto(string mar, string pat, int a, float pB, int cil);
 
+    int getCilindradas() const;
     void mostrarInfo() override;
 };
 
@@ -51,6 +52,7 @@ private:
 public:
     Auto(string mar, string pat, int a, float pB, int puer);
 
+    int getPuertas() const
     void mostrarInfo() override;
 };
 

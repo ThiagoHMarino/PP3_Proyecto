@@ -52,6 +52,8 @@ void Auto::mostrarInfo(){
     cout << "=====================================" << endl;
 }
 
+int Auto::getPuertas() const{return puertas;}
+
 //MOTO
 Moto::Moto(string m, string pat, int a, float pB, int cil):Vehiculo(m,pat,a,pB),cilindradas(cil){}
 
@@ -63,6 +65,7 @@ void Moto::mostrarInfo(){
     cout << "=====================================" << endl;
 }
 
+int Moto::getCilindradas() const{return cilindradas;}
 //CONTRATO
 Contrato::Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float cargo):
 id_contrato(id),cliente(c),vehiculo(v),tiempoEstablecido(tiempoHoras), costo(0), cargoExtraporHora(cargo){}

@@ -301,9 +301,8 @@ bool DataBase::guardarMoto(Moto* moto) {
     sqlite3_bind_int(stmt, 3, moto->getAnio());
     sqlite3_bind_double(stmt, 4, moto->getPrecioBase());
     sqlite3_bind_int(stmt, 5, moto->getActivo() ? 1 : 0);
-    // Para obtener cilindradas necesitarías agregar un getter en la clase Moto
-    // Por ahora lo dejo en 0, o puedes implementar getCilindradas()
-    sqlite3_bind_int(stmt, 6, 0); // cilindradas
+    sqlite3_bind_int(stmt, 6, moto->getCilindradas());
+
 
     bool resultado = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);
@@ -331,9 +330,7 @@ bool DataBase::guardarAuto(Auto* automovil) {
     sqlite3_bind_int(stmt, 3, automovil->getAnio());
     sqlite3_bind_double(stmt, 4, automovil->getPrecioBase());
     sqlite3_bind_int(stmt, 5, automovil->getActivo() ? 1 : 0);
-    // Para obtener puertas necesitarías agregar un getter en la clase Auto
-    // Por ahora lo dejo en 0, o puedes implementar getPuertas()
-    sqlite3_bind_int(stmt, 6, 0); // puertas
+    sqlite3_bind_int(stmt, 6, automovil->getPuertas());
 
     bool resultado = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);

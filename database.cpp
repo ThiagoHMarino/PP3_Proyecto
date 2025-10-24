@@ -328,6 +328,44 @@ bool DataBase::actualizarDisponibilidadVehiculo(string patente, bool disponible)
     return resultado;
 }
 
+Vehiculo* DataBase::Buscarvehiculoporpatente(string pat) {
+    Vehiculo* v=nullptr;
+    if(datab == nullptr) {
+        cout << "Error: Base de datos no inicializada." << endl;
+        return v;
+    }
+
+    string sql = "SELECT patente, marca, anio, precioBase, disponible, cilindradas, puertas FROM Vehiculo;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        cout << "Error Buscando vehiculo: " << sqlite3_errmsg(datab) << endl;
+        return v;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        if (pat==patente) {
+            string marca = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            int anio = sqlite3_column_int(stmt, 2);
+            float precioBase = sqlite3_column_double(stmt, 3);
+            bool disponible = sqlite3_column_int(stmt, 4) == 1;
+            int cilindradas = sqlite3_column_int(stmt, 5);
+            int puertas = sqlite3_column_int(stmt, 6);
+
+            if (cilindradas > 0) {
+                // Es una moto
+                v = new Moto(marca, patente, anio, precioBase, cilindradas);
+            } else if (puertas > 0) {
+                // Es un auto
+                v = new Auto(marca, patente, anio, precioBase, puertas);
+            }
+            break;
+        }
+    }
+    return v;
+}
+
 // Nueva función para cargar vehículos
 vector<Vehiculo*> DataBase::cargarVehiculos() {
     vector<Vehiculo*> vehiculos;
@@ -539,11 +577,13 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
     }
 
     string sql = "SELECT c.id_contrato, c.dni_cliente, c.patente_vehiculo, "
-                 "c.tiempo_establecido, cl.nombre, cl.apellido "
-                 "FROM Contrato c "
-                 "INNER JOIN Cliente cl ON c.dni_cliente = cl.dni "
-                 "WHERE c.activo = 1 "
-                 "ORDER BY c.id_contrato;";
+    "c.tiempo_establecido, c.costo, c.cargo_extra, "
+    "cl.nombre, cl.apellido, cl.edad "
+    "FROM Contrato c "
+    "JOIN Cliente cl ON c.dni_cliente = cl.dni "
+    "WHERE c.activo = 1 "
+    "ORDER BY c.id_contrato;";
+;
 
     sqlite3_stmt* stmt;
 
@@ -552,25 +592,29 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
         return activos;
     }
 
-    cout << "CONTRATOS ACTIVOS:" << endl;
-    cout << "==================" << endl;
-
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int id_contrato = sqlite3_column_int(stmt, 0);
         int dni = sqlite3_column_int(stmt, 1);
         string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
         float tiempo = sqlite3_column_double(stmt, 3);
-        string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
-        string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+        float costo = sqlite3_column_double(stmt, 4);
+        float cargo_extra = sqlite3_column_double(stmt, 5);
+        string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+        string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
+        int edad = sqlite3_column_int(stmt, 8);
 
-        cout << "Contrato #" << id_contrato << " - " << nombre << " " << apellido
-             << " (DNI: " << dni << ") - Vehículo: " << patente
-             << " - Tiempo: " << (tiempo / 3600.0) << " horas" << endl;
+        Cliente* cliente = new Cliente(nombre, apellido, edad, dni);
+        Contrato* contrato = new Contrato(id_contrato, *cliente, Buscarvehiculoporpatente(patente) , tiempo, cargo_extra);
+
+        if (contrato!=nullptr) {
+            activos.push_back(contrato);
+        }
+
+        sqlite3_finalize(stmt);
+        cout << "Se cargaron " << activos.size() << " contratos." << endl;
+        return activos;
+
     }
-
-    sqlite3_finalize(stmt);
-    cout << "Total de contratos activos: " << activos.size() << endl;
-    return activos;
 }
 
 //=============================================================================

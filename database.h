@@ -40,6 +40,7 @@ public:
     bool guardarAuto(Auto* automovil);
     bool actualizarDisponibilidadVehiculo(string patente, bool disponible);
     vector<Vehiculo*> cargarVehiculos();  // NUEVA FUNCIÓN
+    Vehiculo* Buscarvehiculoporpatente(string patente);
 
     //=============================================================================
     // MÉTODOS PARA CONTRATOS

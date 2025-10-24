@@ -23,8 +23,7 @@ void menu_simple() {
     db.crearTablas();
     SistemaAlquiler sistema(&db);
 
-    while (true) {
-        system("cls");  // Limpiar pantalla en Windows
+    while (true) {// Limpiar pantalla en Windows
         cout << "\n========================================" << endl;
         cout << "  SISTEMA DE ALQUILER DE VEHICULOS" << endl;
         cout << "========================================" << endl;

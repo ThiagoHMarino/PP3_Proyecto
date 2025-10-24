@@ -12,6 +12,7 @@ add_executable(PP3_Proyecto
         database.h
         database.cpp
         sqlite3.c
+
 )
 
 target_include_directories(PP3_Proyecto PRIVATE

@@ -206,6 +206,8 @@ void SistemaAlquiler::cargarDatos() {
     cout << "Clientes cargados: " << clientes.size() << endl;
     vehiculos = database->cargarVehiculos();
     cout << "Vehiculos cargados: " << vehiculos.size() << endl;
+    contratos_activos = database->cargarContratosActivos();
+    cout << "Contratos cargados: " << contratos_activos.size() << endl;
 }
 
 bool SistemaAlquiler::registrarCliente(string nombre, string apellido, int edad, int dni) {

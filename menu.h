@@ -10,6 +10,7 @@
 //**********************  definicion de funciones modulares para el menu *************************/
 
 void funcion_menu();
+void menu_simple();
 
 //************************************************************************************************/
 #endif // MENU_H

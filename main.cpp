@@ -28,7 +28,7 @@ int main() {
     cout << endl;
 
     // Inicializar el menú interactivo
-    funcion_menu();
+    menu_simple();
 
     cout << endl;
     cout << "==================================================" << endl;

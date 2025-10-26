@@ -99,6 +99,8 @@ public:
     void cerrarContrato();
     void mostrarInfo() const;
 
+    void setInicio(time_point<system_clock> t) { inicio = t; }
+
     ~Contrato(){};
 };
 

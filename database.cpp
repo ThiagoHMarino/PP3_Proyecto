@@ -51,6 +51,7 @@ void DataBase::crearTablas() {
         "dni_cliente INTEGER NOT NULL, "
         "patente_vehiculo TEXT NOT NULL, "
         "tiempo_establecido REAL NOT NULL, "
+        "tiempo_inicio INTEGER, "
         "costo REAL DEFAULT 0, "
         "cargo_extra REAL DEFAULT 0, "
         "activo INTEGER DEFAULT 1, "
@@ -79,6 +80,14 @@ void DataBase::crearTablas() {
         sqlite3_free(errorMsg);
     } else {
         cout << "Tabla Contrato verificada y creada correctamente." << endl;
+    }
+    string sql_alter = "ALTER TABLE Contrato ADD COLUMN tiempo_inicio INTEGER;";
+    if(sqlite3_exec(datab, sql_alter.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        // Si da error, probablemente la columna ya existe - no es problema
+        cout << "Columna tiempo_inicio ya existe o no se pudo agregar (esto es normal si ya existe)" << endl;
+        sqlite3_free(errorMsg);
+    } else {
+        cout << "Columna tiempo_inicio agregada exitosamente." << endl;
     }
 
     cout << "---------------------------------------------" << endl;
@@ -423,8 +432,9 @@ bool DataBase::guardarContrato(Contrato contrato) {
         return false;
     }
 
-    string sql = "INSERT INTO Contrato (dni_cliente, patente_vehiculo, tiempo_establecido, activo) "
-                 "VALUES (?, ?, ?, 1);";
+    // SQL actualizado para incluir tiempo_inicio
+    string sql = "INSERT INTO Contrato (dni_cliente, patente_vehiculo, tiempo_establecido, tiempo_inicio, activo) "
+                 "VALUES (?, ?, ?, ?, 1);";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
@@ -436,15 +446,20 @@ bool DataBase::guardarContrato(Contrato contrato) {
     Vehiculo* vehiculo = contrato.getVehiculo();
     float tiempoSegundos = contrato.getTiempoEstablecido().count();
 
+    // Obtener el timestamp actual (segundos desde epoch Unix)
+    auto ahora = system_clock::now();
+    auto timestamp = system_clock::to_time_t(ahora);
+
     sqlite3_bind_int(stmt, 1, cliente.getDni());
     sqlite3_bind_text(stmt, 2, vehiculo->getPatente().c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_double(stmt, 3, tiempoSegundos);
+    sqlite3_bind_int64(stmt, 4, static_cast<sqlite3_int64>(timestamp));  // Guardar timestamp de inicio
 
     bool resultado = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);
 
     if (resultado) {
-        cout << "Contrato guardado exitosamente en BD." << endl;
+        cout << "Contrato guardado exitosamente en BD con tiempo de inicio." << endl;
     }
 
     return resultado;
@@ -455,6 +470,7 @@ bool DataBase::finalizarContrato(int id_contrato, float costo_final) {
         cout << "Error: Base de datos no inicializada." << endl;
         return false;
     }
+
 
     string sql = "UPDATE Contrato SET costo = ?, activo = 0 WHERE id_contrato = ?;";
     sqlite3_stmt* stmt;
@@ -577,7 +593,7 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
     }
 
     string sql = "SELECT c.id_contrato, c.dni_cliente, c.patente_vehiculo, "
-                 "c.tiempo_establecido, c.costo, c.cargo_extra, "
+                 "c.tiempo_establecido, c.tiempo_inicio, c.costo, c.cargo_extra, "
                  "cl.nombre, cl.apellido, cl.edad "
                  "FROM Contrato c "
                  "JOIN Cliente cl ON c.dni_cliente = cl.dni "
@@ -591,41 +607,48 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
         return activos;
     }
 
-    // DESPUÉS de sqlite3_prepare_v2 y ANTES del while
-    cout << "SQL preparado correctamente. Ejecutando query..." << endl;
-    int step_result = sqlite3_step(stmt);
-    cout << "Primer paso del query: " << step_result << " (SQLITE_ROW=" << SQLITE_ROW << ", SQLITE_DONE=" << SQLITE_DONE << ")" << endl;
-    sqlite3_reset(stmt);  // Resetear para volver al inicio
-
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int id_contrato = sqlite3_column_int(stmt, 0);
         int dni = sqlite3_column_int(stmt, 1);
         string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        float tiempo = sqlite3_column_double(stmt, 3);  // Ya está en segundos
-        float costo = sqlite3_column_double(stmt, 4);
-        float cargo_extra = sqlite3_column_double(stmt, 5);
-        string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
-        string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
-        int edad = sqlite3_column_int(stmt, 8);
+        float tiempo = sqlite3_column_double(stmt, 3);
+        sqlite3_int64 tiempo_inicio_timestamp = sqlite3_column_int64(stmt, 4);
+        float costo = sqlite3_column_double(stmt, 5);
+        float cargo_extra = sqlite3_column_double(stmt, 6);
+        string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
+        string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
+        int edad = sqlite3_column_int(stmt, 9);
 
         // Buscar el vehículo
         Vehiculo* vehiculo = Buscarvehiculoporpatente(patente);
 
         if (vehiculo == nullptr) {
             cout << "Advertencia: No se encontró vehículo con patente " << patente << endl;
-            continue;  // Saltar este contrato si no hay vehículo
+            continue;
         }
 
-        // Crear cliente (sin new, para evitar memory leak)
+        // Crear cliente
         Cliente cliente(nombre, apellido, edad, dni);
 
-        // Crear contrato - tiempo ya está en segundos desde la BD
+        // Crear contrato
         Contrato* contrato = new Contrato(id_contrato, cliente, vehiculo, tiempo, cargo_extra);
+
+        // IMPORTANTE: Restaurar el tiempo de inicio desde la BD
+        if (tiempo_inicio_timestamp > 0) {
+            time_t inicio_time = static_cast<time_t>(tiempo_inicio_timestamp);
+            auto inicio_timepoint = system_clock::from_time_t(inicio_time);
+
+            // Restaurar el inicio del contrato
+            contrato->setInicio(inicio_timepoint);
+
+            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
+                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
+        } else {
+            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
+        }
 
         if (contrato != nullptr) {
             activos.push_back(contrato);
-            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
-                 << nombre << " " << apellido << ", Vehículo: " << patente << ")" << endl;
         }
     }
 

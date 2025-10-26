@@ -4,7 +4,7 @@
 #include <curses.h>
 #include <string>
 #include <iostream>
-//
+
 #ifdef _WIN32
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -23,7 +23,7 @@ void menu_simple() {
     db.crearTablas();
     SistemaAlquiler sistema(&db);
 
-    while (true) {// Limpiar pantalla en Windows
+    while (true) {
         cout << "\n========================================" << endl;
         cout << "  SISTEMA DE ALQUILER DE VEHICULOS" << endl;
         cout << "========================================" << endl;
@@ -343,6 +343,52 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
     getch();
 }
 
+void menuLimpiarBaseDatos() {
+    clear();
+    mvprintw(0, 0, "=== LIMPIAR BASE DE DATOS ===");
+    mvprintw(2, 0, "ADVERTENCIA: Esta operacion eliminara TODOS los datos!");
+    mvprintw(3, 0, "- Todos los clientes");
+    mvprintw(4, 0, "- Todos los vehiculos");
+    mvprintw(5, 0, "- Todos los contratos");
+    mvprintw(7, 0, "Esta accion NO se puede deshacer.");
+    mvprintw(9, 0, "Estas seguro? (S/N): ");
+    refresh();
+
+    echo();
+    char confirmacion = getch();
+    noecho();
+
+    if (confirmacion == 'S' || confirmacion == 's') {
+        clear();
+        mvprintw(0, 0, "Limpiando base de datos...");
+        refresh();
+
+        // Salir de curses
+        endwin();
+
+        // Crear una conexión NUEVA y limpia para limpiar
+        {
+            DataBase db_temp("alquiler.db");
+            db_temp.limpiarDatos();
+        } // El destructor cierra la conexión
+
+        cout << "\nBase de datos limpiada exitosamente!" << endl;
+        cout << "El programa se reiniciara..." << endl;
+        cout << "\nPresiona Enter para continuar...";
+        cin.ignore();
+        cin.get();
+
+        // NO reiniciar curses, salir del programa
+        exit(0);
+    } else {
+        clear();
+        mvprintw(0, 0, "Operacion cancelada.");
+        mvprintw(2, 0, "Presiona cualquier tecla para continuar...");
+        refresh();
+        getch();
+    }
+}
+
 // ============= FUNCIÓN PRINCIPAL =============
 void funcion_menu() {
     DataBase db("alquiler.db");
@@ -364,17 +410,14 @@ void funcion_menu() {
     if (altura < 25 || ancho < 80) {
         cout << "Ventana muy pequena. Ajustando..." << endl;
 
-        // Primero ajustar el buffer
         COORD bufferSize = {80, 30};
         SetConsoleScreenBufferSize(hConsole, bufferSize);
 
-        // Luego ajustar la ventana
         SMALL_RECT windowSize = {0, 0, 79, 29};
         SetConsoleWindowInfo(hConsole, TRUE, &windowSize);
 
-        Sleep(1000);  // Dar más tiempo para que se ajuste
+        Sleep(1000);
 
-        // Verificar si funcionó
         GetConsoleScreenBufferInfo(hConsole, &csbi);
         altura = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
         cout << "Nuevo tamanio: " << (csbi.srWindow.Right - csbi.srWindow.Left + 1) << "x" << altura << endl;
@@ -387,7 +430,6 @@ void funcion_menu() {
             cout << "================================================\n" << endl;
             cin.get();
 
-            // Verificar de nuevo
             GetConsoleScreenBufferInfo(hConsole, &csbi);
             altura = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 
@@ -427,10 +469,11 @@ void funcion_menu() {
         "7. Cerrar Contrato",
         "8. Ver Contratos Activos",
         "9. Ver Historial Completo",
+        "L. Limpiar Base de Datos",
         "0. Salir"
     };
 
-    int n_opciones = 10;
+    int n_opciones = 11;
     int seleccion = 0;
 
     while (true) {
@@ -463,7 +506,6 @@ void funcion_menu() {
                 clear();
                 refresh();
 
-                // NO salir de curses para las opciones de menú
                 switch(seleccion) {
                     case 0:
                         menuRegistrarCliente(&sistema);
@@ -538,6 +580,10 @@ void funcion_menu() {
                         keypad(stdscr, TRUE);
                         break;
                     case 9:
+                        menuLimpiarBaseDatos();
+                        // La función hace exit(0) si se confirma
+                        break;
+                    case 10:
                         endwin();
                         return;
                 }

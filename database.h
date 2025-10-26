@@ -26,6 +26,11 @@ public:
     void crearTablas();
 
     //=============================================================================
+    // MÉTODOS DE MANTENIMIENTO
+    //=============================================================================
+    bool limpiarDatos();  // Limpia todos los datos de las tablas
+
+    //=============================================================================
     // MÉTODOS PARA CLIENTE
     //=============================================================================
     bool guardarCliente(Cliente cliente);
@@ -39,7 +44,7 @@ public:
     bool guardarMoto(Moto* moto);
     bool guardarAuto(Auto* automovil);
     bool actualizarDisponibilidadVehiculo(string patente, bool disponible);
-    vector<Vehiculo*> cargarVehiculos();  // NUEVA FUNCIÓN
+    vector<Vehiculo*> cargarVehiculos();
     Vehiculo* Buscarvehiculoporpatente(string patente);
 
     //=============================================================================

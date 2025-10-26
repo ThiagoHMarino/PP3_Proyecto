@@ -609,12 +609,10 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
         if (contrato!=nullptr) {
             activos.push_back(contrato);
         }
-
-        sqlite3_finalize(stmt);
-        cout << "Se cargaron " << activos.size() << " contratos." << endl;
-        return activos;
-
     }
+    sqlite3_finalize(stmt);
+    cout << "Se cargaron " << activos.size() << " contratos." << endl;
+    return activos;
 }
 
 //=============================================================================

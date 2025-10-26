@@ -577,13 +577,12 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
     }
 
     string sql = "SELECT c.id_contrato, c.dni_cliente, c.patente_vehiculo, "
-    "c.tiempo_establecido, c.costo, c.cargo_extra, "
-    "cl.nombre, cl.apellido, cl.edad "
-    "FROM Contrato c "
-    "JOIN Cliente cl ON c.dni_cliente = cl.dni "
-    "WHERE c.activo = 1 "
-    "ORDER BY c.id_contrato;";
-;
+                 "c.tiempo_establecido, c.costo, c.cargo_extra, "
+                 "cl.nombre, cl.apellido, cl.edad "
+                 "FROM Contrato c "
+                 "JOIN Cliente cl ON c.dni_cliente = cl.dni "
+                 "WHERE c.activo = 1 "
+                 "ORDER BY c.id_contrato;";
 
     sqlite3_stmt* stmt;
 
@@ -592,26 +591,46 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
         return activos;
     }
 
+    // DESPUÉS de sqlite3_prepare_v2 y ANTES del while
+    cout << "SQL preparado correctamente. Ejecutando query..." << endl;
+    int step_result = sqlite3_step(stmt);
+    cout << "Primer paso del query: " << step_result << " (SQLITE_ROW=" << SQLITE_ROW << ", SQLITE_DONE=" << SQLITE_DONE << ")" << endl;
+    sqlite3_reset(stmt);  // Resetear para volver al inicio
+
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int id_contrato = sqlite3_column_int(stmt, 0);
         int dni = sqlite3_column_int(stmt, 1);
         string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        float tiempo = sqlite3_column_double(stmt, 3);
+        float tiempo = sqlite3_column_double(stmt, 3);  // Ya está en segundos
         float costo = sqlite3_column_double(stmt, 4);
         float cargo_extra = sqlite3_column_double(stmt, 5);
         string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
         string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
         int edad = sqlite3_column_int(stmt, 8);
 
-        Cliente* cliente = new Cliente(nombre, apellido, edad, dni);
-        Contrato* contrato = new Contrato(id_contrato, *cliente, Buscarvehiculoporpatente(patente) , tiempo, cargo_extra);
+        // Buscar el vehículo
+        Vehiculo* vehiculo = Buscarvehiculoporpatente(patente);
 
-        if (contrato!=nullptr) {
+        if (vehiculo == nullptr) {
+            cout << "Advertencia: No se encontró vehículo con patente " << patente << endl;
+            continue;  // Saltar este contrato si no hay vehículo
+        }
+
+        // Crear cliente (sin new, para evitar memory leak)
+        Cliente cliente(nombre, apellido, edad, dni);
+
+        // Crear contrato - tiempo ya está en segundos desde la BD
+        Contrato* contrato = new Contrato(id_contrato, cliente, vehiculo, tiempo, cargo_extra);
+
+        if (contrato != nullptr) {
             activos.push_back(contrato);
+            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
+                 << nombre << " " << apellido << ", Vehículo: " << patente << ")" << endl;
         }
     }
+
     sqlite3_finalize(stmt);
-    cout << "Se cargaron " << activos.size() << " contratos." << endl;
+    cout << "Se cargaron " << activos.size() << " contratos activos." << endl;
     return activos;
 }
 

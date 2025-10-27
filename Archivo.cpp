@@ -116,7 +116,7 @@ void Contrato::mostrarInfo() const {
     cout<<"Tiempo establecido: "<< (tiempoEstablecido.count() / 3600.0f) << " horas" << endl;
     cout<<endl;
 
-    duration<float> tiempoReal = fin - inicio;
+    duration<float> tiempoReal = system_clock::now() - inicio;
     cout << "Duración real: " << (tiempoReal.count() / 3600.0f) << " horas" << endl;
 
     cout << "Costo total: $" << costo << endl;

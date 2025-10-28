@@ -19,173 +19,6 @@
 
 using namespace std;
 
-// ============= MENÚ SIMPLE (SIN CURSES) =============
-void menu_simple() {
-    DataBase db("alquiler.db");
-    db.crearTablas();
-    SistemaAlquiler sistema(&db);
-
-    while (true) {
-        cout << "\n========================================" << endl;
-        cout << "  SISTEMA DE ALQUILER DE VEHICULOS" << endl;
-        cout << "========================================" << endl;
-        cout << "1. Registrar Cliente" << endl;
-        cout << "2. Registrar Vehiculo" << endl;
-        cout << "3. Listar Clientes" << endl;
-        cout << "4. Listar Vehiculos Disponibles" << endl;
-        cout << "5. Listar Todos los Vehiculos" << endl;
-        cout << "6. Crear Contrato" << endl;
-        cout << "7. Cerrar Contrato" << endl;
-        cout << "8. Ver Contratos Activos" << endl;
-        cout << "9. Ver Historial Completo" << endl;
-        cout << "0. Salir" << endl;
-        cout << "========================================" << endl;
-        cout << "Selecciona una opcion: ";
-
-        int opcion;
-        cin >> opcion;
-        cin.ignore();
-
-        switch(opcion) {
-            case 1: {
-                cout << "\n=== REGISTRAR NUEVO CLIENTE ===" << endl;
-                string nombre, apellido;
-                int edad, dni;
-
-                cout << "Nombre: ";
-                getline(cin, nombre);
-                cout << "Apellido: ";
-                getline(cin, apellido);
-                cout << "Edad: ";
-                cin >> edad;
-                cout << "DNI: ";
-                cin >> dni;
-                cin.ignore();
-
-                if (sistema.registrarCliente(nombre, apellido, edad, dni)) {
-                    cout << "\nCliente registrado exitosamente!" << endl;
-                } else {
-                    cout << "\nError: No se pudo registrar el cliente." << endl;
-                }
-                break;
-            }
-            case 2: {
-                cout << "\n=== REGISTRAR NUEVO VEHICULO ===" << endl;
-                cout << "Tipo de vehiculo:" << endl;
-                cout << "1. Auto" << endl;
-                cout << "2. Moto" << endl;
-                cout << "Selecciona: ";
-
-                int tipo;
-                cin >> tipo;
-                cin.ignore();
-
-                string marca, patente;
-                int anio;
-                float precio;
-
-                cout << "Marca: ";
-                getline(cin, marca);
-                cout << "Patente: ";
-                getline(cin, patente);
-                cout << "Anio: ";
-                cin >> anio;
-                cout << "Precio base por hora: ";
-                cin >> precio;
-                cin.ignore();
-
-                Vehiculo* vehiculo = nullptr;
-
-                if (tipo == 1) {
-                    int puertas;
-                    cout << "Numero de puertas: ";
-                    cin >> puertas;
-                    cin.ignore();
-                    vehiculo = new Auto(marca, patente, anio, precio, puertas);
-                } else if (tipo == 2) {
-                    int cilindradas;
-                    cout << "Cilindradas: ";
-                    cin >> cilindradas;
-                    cin.ignore();
-                    vehiculo = new Moto(marca, patente, anio, precio, cilindradas);
-                }
-
-                if (vehiculo && sistema.registrarVehiculo(vehiculo)) {
-                    cout << "\nVehiculo registrado exitosamente!" << endl;
-                } else {
-                    cout << "\nError: No se pudo registrar el vehiculo." << endl;
-                }
-                break;
-            }
-            case 3:
-                cout << "\n";
-                sistema.listarClientesRegistrados();
-                break;
-            case 4:
-                cout << "\n";
-                sistema.listarVehiculosDisponibles();
-                break;
-            case 5:
-                cout << "\n";
-                sistema.listarTodosVehiculos();
-                break;
-            case 6: {
-                cout << "\n=== CREAR NUEVO CONTRATO ===" << endl;
-                int dni;
-                string patente;
-                float horas;
-
-                cout << "DNI del cliente: ";
-                cin >> dni;
-                cin.ignore();
-                cout << "Patente del vehiculo: ";
-                getline(cin, patente);
-                cout << "Horas de alquiler: ";
-                cin >> horas;
-                cin.ignore();
-
-                Contrato* contrato = sistema.crearNuevoContrato(dni, patente, horas);
-                if (contrato != nullptr) {
-                    cout << "\nContrato creado exitosamente!" << endl;
-                    cout << "ID del contrato: " << contrato->getId() << endl;
-                } else {
-                    cout << "\nError: No se pudo crear el contrato." << endl;
-                }
-                break;
-            }
-            case 7: {
-                cout << "\n=== CERRAR CONTRATO ===" << endl;
-                int id;
-                cout << "ID del contrato a cerrar: ";
-                cin >> id;
-                cin.ignore();
-
-                if (sistema.cerrarContrato(id)) {
-                    cout << "\nContrato cerrado exitosamente!" << endl;
-                } else {
-                    cout << "\nError: No se pudo cerrar el contrato." << endl;
-                }
-                break;
-            }
-            case 8:
-                cout << "\n";
-                sistema.listarContratos();
-                break;
-            case 9:
-                cout << "\n";
-                sistema.mostrarHistorialCompleto();
-                break;
-            case 0:
-                cout << "\nSaliendo del sistema..." << endl;
-                return;
-            default:
-                cout << "\nOpcion invalida. Intenta de nuevo." << endl;
-        }
-
-        cout << "\nPresiona Enter para continuar...";
-        cin.get();
-    }
-}
 
 // ============= MENÚS CURSES =============
 
@@ -215,7 +48,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     if (sistema->registrarCliente(string(nombre), string(apellido), edad, dni)) {
         mvprintw(0, 0, "Cliente registrado exitosamente!");
     } else {
-        mvprintw(0, 0, "Error: No se pudo registrar el cliente (quizas ya existe).");
+        mvprintw(0, 0, "Error: No se pudo registrar el cliente .");
     }
 
     mvprintw(2, 0, "Presiona cualquier tecla para continuar...");
@@ -439,7 +272,6 @@ void funcion_menu() {
                 cout << "La ventana sigue siendo muy pequena." << endl;
                 cout << "Usando menu simple..." << endl;
                 Sleep(2000);
-                menu_simple();
                 return;
             }
         }
@@ -453,7 +285,7 @@ void funcion_menu() {
         cout << "Usando menu simple en su lugar..." << endl;
         cout << "================================================\n" << endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-        menu_simple();
+
         return;
     }
 
@@ -583,8 +415,6 @@ void funcion_menu() {
                         break;
                     case 9:
                         menuLimpiarBaseDatos();
-                        // La función hace exit(0) si se confirma
-                        break;
                     case 10:
                         endwin();
                         return;

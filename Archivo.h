@@ -99,6 +99,7 @@ public:
     void cerrarContrato();
     void mostrarInfo() const;
 
+    void setcosto(float c){costo=c;}
     void setInicio(time_point<system_clock> t) { inicio = t; }
 
     ~Contrato(){};
@@ -108,9 +109,11 @@ class Historial{
 private:
     vector<Contrato*> lista_contratos;
 public:
+    ~Historial();
     void agregarContrato(Contrato * contratoAgregar);
     void mostrarContratoPorCliente(Cliente cliente);
     void mostrarHistorial();
+    size_t getsize();
 };
 
 class SistemaAlquiler{

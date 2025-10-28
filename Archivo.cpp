@@ -67,6 +67,7 @@ void Moto::mostrarInfo(){
 }
 
 int Moto::getCilindradas() const{return cilindradas;}
+
 //CONTRATO
 Contrato::Contrato(int id, Cliente c, Vehiculo* v, float tiempoHoras, float cargo):
 id_contrato(id),cliente(c),vehiculo(v),tiempoEstablecido(tiempoHoras), costo(0), cargoExtraporHora(cargo){}
@@ -107,7 +108,6 @@ void Contrato::mostrarInfo() const {
     vehiculo->mostrarInfo();
     cout<<endl;
 
-    cout<<"CLIENTE: "<<endl;
     cliente.mostrarInfo();
     cout<<endl;
 
@@ -117,10 +117,8 @@ void Contrato::mostrarInfo() const {
     cout<<endl;
 
     duration<float> tiempoReal = system_clock::now() - inicio;
-    cout << "Duración real: " << (tiempoReal.count() / 3600.0f) << " horas" << endl;
+    cout << "Duración actual: " << (tiempoReal.count() / 3600.0f) << " horas" << endl;
 
-    cout << "Costo total: $" << costo << endl;
-    cout << "=====================================" << endl;
 }
 //METODOS ADICIONALES CONTRATO
 
@@ -131,10 +129,17 @@ duration<float> Contrato::getTiempoEstablecido() const { return tiempoEstablecid
 
 
 //HISTORIAL
+Historial::~Historial(){
+    for (Contrato* c : lista_contratos) {
+        delete c;
+    }
+}
 
 void Historial::agregarContrato(Contrato *contratoAgregar) {
     lista_contratos.push_back(contratoAgregar);
 }
+
+size_t Historial::getsize() {return lista_contratos.size();}
 
 void Historial::mostrarContratoPorCliente(Cliente cliente) {
     cout << "=====================================" << endl;
@@ -174,6 +179,7 @@ void Historial::mostrarHistorial() {
     for (it = lista_contratos.begin(); it != lista_contratos.end(); it++) {
         cout << "CONTRATO #" << contador << " ---" << endl;
         (*it)->mostrarInfo();
+        cout<<"Costo Total:" << (*it)->getCosto()<<endl;
         contador++;
     }
 
@@ -208,6 +214,8 @@ void SistemaAlquiler::cargarDatos() {
     cout << "Vehiculos cargados: " << vehiculos.size() << endl;
     contratos_activos = database->cargarContratosActivos();
     cout << "Contratos cargados: " << contratos_activos.size() << endl;
+    database->cargarHistorial( &historial);
+    cout << "Contratos cargados en el historial: " << historial.getsize() << endl;
 }
 
 bool SistemaAlquiler::registrarCliente(string nombre, string apellido, int edad, int dni) {

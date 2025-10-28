@@ -16,6 +16,16 @@ DataBase::DataBase(string nBD): datab(nullptr), nombreBD(nBD) {
         cout << "Error al abrir la BD: " << sqlite3_errmsg(datab) << endl;
         datab = nullptr;
     } else {
+        // Configurar timeout para esperar si la BD está bloqueada (10 segundos)
+        sqlite3_busy_timeout(datab, 10000);
+
+        // Habilitar WAL mode para mejor concurrencia
+        char* errorMsg = nullptr;
+        sqlite3_exec(datab, "PRAGMA journal_mode=WAL;", nullptr, nullptr, &errorMsg);
+        if (errorMsg) {
+            sqlite3_free(errorMsg);
+        }
+
         cout << "BASE DE DATOS: " << nombreBD << " abierta con éxito!" << endl;
     }
 }
@@ -81,18 +91,107 @@ void DataBase::crearTablas() {
     } else {
         cout << "Tabla Contrato verificada y creada correctamente." << endl;
     }
+
     string sql_alter = "ALTER TABLE Contrato ADD COLUMN tiempo_inicio INTEGER;";
     if(sqlite3_exec(datab, sql_alter.c_str(), nullptr, nullptr, &errorMsg) != SQLITE_OK) {
         // Si da error, probablemente la columna ya existe - no es problema
-        cout << "Columna tiempo_inicio ya existe o no se pudo agregar (esto es normal si ya existe)" << endl;
         sqlite3_free(errorMsg);
-    } else {
-        cout << "Columna tiempo_inicio agregada exitosamente." << endl;
     }
 
     cout << "---------------------------------------------" << endl;
     cout << "Todas las tablas fueron verificadas o creadas." << endl;
     cout << "---------------------------------------------" << endl;
+}
+
+//=============================================================================
+// LIMPIAR DATOS DE LA BASE DE DATOS
+//=============================================================================
+bool DataBase::limpiarDatos() {
+    if (datab == nullptr) {
+        cout << "Error: Base de datos no inicializada." << endl;
+        return false;
+    }
+
+    cout << "=====================================================" << endl;
+    cout << "LIMPIANDO DATOS DE LA BASE DE DATOS" << endl;
+    cout << "=====================================================" << endl;
+
+    char* errorMsg = nullptr;
+
+    // Forzar checkpoint del WAL antes de comenzar
+    sqlite3_wal_checkpoint_v2(datab, nullptr, SQLITE_CHECKPOINT_TRUNCATE, nullptr, nullptr);
+
+    // Desactivar foreign keys primero (FUERA de la transacción)
+    if (sqlite3_exec(datab, "PRAGMA foreign_keys = OFF;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        cout << "Advertencia desactivando foreign keys: " << errorMsg << endl;
+        sqlite3_free(errorMsg);
+    }
+
+    // Iniciar transacción INMEDIATA (lock exclusivo)
+    if (sqlite3_exec(datab, "BEGIN IMMEDIATE TRANSACTION;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        cout << "Error iniciando transacción: " << errorMsg << endl;
+        sqlite3_free(errorMsg);
+        sqlite3_exec(datab, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    // Limpiar Contrato
+    if (sqlite3_exec(datab, "DELETE FROM Contrato;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        cout << "Error limpiando Contrato: " << errorMsg << endl;
+        sqlite3_free(errorMsg);
+        sqlite3_exec(datab, "ROLLBACK;", nullptr, nullptr, nullptr);
+        sqlite3_exec(datab, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+        return false;
+    }
+    cout << "Tabla Contrato limpiada." << endl;
+
+    // Limpiar Vehiculo
+    if (sqlite3_exec(datab, "DELETE FROM Vehiculo;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        cout << "Error limpiando Vehiculo: " << errorMsg << endl;
+        sqlite3_free(errorMsg);
+        sqlite3_exec(datab, "ROLLBACK;", nullptr, nullptr, nullptr);
+        sqlite3_exec(datab, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+        return false;
+    }
+    cout << "Tabla Vehiculo limpiada." << endl;
+
+    // Limpiar Cliente
+    if (sqlite3_exec(datab, "DELETE FROM Cliente;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        cout << "Error limpiando Cliente: " << errorMsg << endl;
+        sqlite3_free(errorMsg);
+        sqlite3_exec(datab, "ROLLBACK;", nullptr, nullptr, nullptr);
+        sqlite3_exec(datab, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+        return false;
+    }
+    cout << "Tabla Cliente limpiada." << endl;
+
+    // Resetear autoincrement
+    if (sqlite3_exec(datab, "DELETE FROM sqlite_sequence;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        // No es crítico, continuamos
+        sqlite3_free(errorMsg);
+    }
+
+    // COMMIT
+    if (sqlite3_exec(datab, "COMMIT;", nullptr, nullptr, &errorMsg) != SQLITE_OK) {
+        cout << "Error haciendo commit: " << errorMsg << endl;
+        sqlite3_free(errorMsg);
+        sqlite3_exec(datab, "ROLLBACK;", nullptr, nullptr, nullptr);
+        sqlite3_exec(datab, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    // Reactivar foreign keys
+    sqlite3_exec(datab, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+
+    // Hacer vacuum para limpiar espacio
+    sqlite3_exec(datab, "VACUUM;", nullptr, nullptr, nullptr);
+
+    cout << "=====================================================" << endl;
+    cout << "Todos los datos han sido eliminados exitosamente." << endl;
+    cout << "Las tablas siguen existiendo y listas para usar." << endl;
+    cout << "=====================================================" << endl;
+
+    return true;
 }
 
 //=============================================================================
@@ -197,10 +296,9 @@ vector<Cliente*> DataBase::cargarClientes() {
 }
 
 //=============================================================================
-// MÉTODOS PARA VEHÍCULOS - CORREGIDOS
+// MÉTODOS PARA VEHÍCULOS
 //=============================================================================
 
-// Nueva función auxiliar para verificar si existe un vehículo
 bool DataBase::existeVehiculo(string patente) {
     if (datab == nullptr) {
         return false;
@@ -226,7 +324,6 @@ bool DataBase::guardarVehiculo(Vehiculo* vehiculo) {
         return false;
     }
 
-    // Verificar si ya existe
     if (existeVehiculo(vehiculo->getPatente())) {
         cout << "El vehículo con patente " << vehiculo->getPatente() << " ya existe en la BD" << endl;
         return false;
@@ -344,7 +441,7 @@ Vehiculo* DataBase::Buscarvehiculoporpatente(string pat) {
         return v;
     }
 
-    string sql = "SELECT patente, marca, anio, precioBase, disponible, cilindradas, puertas FROM Vehiculo;";
+    string sql = "SELECT patente, marca, anio, precioBase, disponible, cilindradas, puertas FROM Vehiculo WHERE patente = ?;";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
@@ -352,30 +449,32 @@ Vehiculo* DataBase::Buscarvehiculoporpatente(string pat) {
         return v;
     }
 
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-        if (pat==patente) {
-            string marca = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-            int anio = sqlite3_column_int(stmt, 2);
-            float precioBase = sqlite3_column_double(stmt, 3);
-            bool disponible = sqlite3_column_int(stmt, 4) == 1;
-            int cilindradas = sqlite3_column_int(stmt, 5);
-            int puertas = sqlite3_column_int(stmt, 6);
+    sqlite3_bind_text(stmt, 1, pat.c_str(), -1, SQLITE_TRANSIENT);
 
-            if (cilindradas > 0) {
-                // Es una moto
-                v = new Moto(marca, patente, anio, precioBase, cilindradas);
-            } else if (puertas > 0) {
-                // Es un auto
-                v = new Auto(marca, patente, anio, precioBase, puertas);
-            }
-            break;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        string marca = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        int anio = sqlite3_column_int(stmt, 2);
+        float precioBase = sqlite3_column_double(stmt, 3);
+        bool disponible = sqlite3_column_int(stmt, 4) == 1;
+        int cilindradas = sqlite3_column_int(stmt, 5);
+        int puertas = sqlite3_column_int(stmt, 6);
+
+        if (cilindradas > 0) {
+            v = new Moto(marca, patente, anio, precioBase, cilindradas);
+        } else if (puertas > 0) {
+            v = new Auto(marca, patente, anio, precioBase, puertas);
+        }
+
+        if (v != nullptr) {
+            v->setDisponible(disponible);
         }
     }
+
+    sqlite3_finalize(stmt);
     return v;
 }
 
-// Nueva función para cargar vehículos
 vector<Vehiculo*> DataBase::cargarVehiculos() {
     vector<Vehiculo*> vehiculos;
 
@@ -404,10 +503,8 @@ vector<Vehiculo*> DataBase::cargarVehiculos() {
         Vehiculo* v = nullptr;
 
         if (cilindradas > 0) {
-            // Es una moto
             v = new Moto(marca, patente, anio, precioBase, cilindradas);
         } else if (puertas > 0) {
-            // Es un auto
             v = new Auto(marca, patente, anio, precioBase, puertas);
         }
 
@@ -423,7 +520,7 @@ vector<Vehiculo*> DataBase::cargarVehiculos() {
 }
 
 //=============================================================================
-// MÉTODOS PARA CONTRATOS (sin cambios necesarios)
+// MÉTODOS PARA CONTRATOS
 //=============================================================================
 
 bool DataBase::guardarContrato(Contrato contrato) {
@@ -432,7 +529,6 @@ bool DataBase::guardarContrato(Contrato contrato) {
         return false;
     }
 
-    // SQL actualizado para incluir tiempo_inicio
     string sql = "INSERT INTO Contrato (dni_cliente, patente_vehiculo, tiempo_establecido, tiempo_inicio, activo) "
                  "VALUES (?, ?, ?, ?, 1);";
     sqlite3_stmt* stmt;
@@ -446,14 +542,13 @@ bool DataBase::guardarContrato(Contrato contrato) {
     Vehiculo* vehiculo = contrato.getVehiculo();
     float tiempoSegundos = contrato.getTiempoEstablecido().count();
 
-    // Obtener el timestamp actual (segundos desde epoch Unix)
     auto ahora = system_clock::now();
     auto timestamp = system_clock::to_time_t(ahora);
 
     sqlite3_bind_int(stmt, 1, cliente.getDni());
     sqlite3_bind_text(stmt, 2, vehiculo->getPatente().c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_double(stmt, 3, tiempoSegundos);
-    sqlite3_bind_int64(stmt, 4, static_cast<sqlite3_int64>(timestamp));  // Guardar timestamp de inicio
+    sqlite3_bind_int64(stmt, 4, static_cast<sqlite3_int64>(timestamp));
 
     bool resultado = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);
@@ -470,7 +565,6 @@ bool DataBase::finalizarContrato(int id_contrato, float costo_final) {
         cout << "Error: Base de datos no inicializada." << endl;
         return false;
     }
-
 
     string sql = "UPDATE Contrato SET costo = ?, activo = 0 WHERE id_contrato = ?;";
     sqlite3_stmt* stmt;
@@ -493,26 +587,26 @@ bool DataBase::finalizarContrato(int id_contrato, float costo_final) {
     return resultado;
 }
 
-vector<Contrato*> DataBase::cargarHistorial() {
-    vector<Contrato*> historial;
+void DataBase::cargarHistorial(Historial *historial) {
 
     if (datab == nullptr) {
         cout << "Error: Base de datos no inicializada." << endl;
-        return historial;
+        return;
     }
 
     string sql = "SELECT c.id_contrato, c.dni_cliente, c.patente_vehiculo, "
-                 "c.tiempo_establecido, c.costo, c.cargo_extra, c.activo, "
+                 "c.tiempo_establecido, c.tiempo_inicio, c.costo, c.cargo_extra, "
                  "cl.nombre, cl.apellido, cl.edad "
                  "FROM Contrato c "
-                 "INNER JOIN Cliente cl ON c.dni_cliente = cl.dni "
+                 "JOIN Cliente cl ON c.dni_cliente = cl.dni "
+                 "WHERE c.activo = 0 "
                  "ORDER BY c.id_contrato;";
 
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
         cout << "Error preparando carga de historial: " << sqlite3_errmsg(datab) << endl;
-        return historial;
+        return;
     }
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -520,23 +614,47 @@ vector<Contrato*> DataBase::cargarHistorial() {
         int dni = sqlite3_column_int(stmt, 1);
         string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
         float tiempo = sqlite3_column_double(stmt, 3);
-        float costo = sqlite3_column_double(stmt, 4);
-        float cargo_extra = sqlite3_column_double(stmt, 5);
-        int activo = sqlite3_column_int(stmt, 6);
-
+        sqlite3_int64 tiempo_inicio_timestamp = sqlite3_column_int64(stmt, 4);
+        float costo = sqlite3_column_double(stmt, 5);
+        float cargo_extra = sqlite3_column_double(stmt, 6);
         string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
         string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
         int edad = sqlite3_column_int(stmt, 9);
 
+        // Buscar el vehículo
+        Vehiculo* vehiculo = Buscarvehiculoporpatente(patente);
+
+        if (vehiculo == nullptr) {
+            cout << "Advertencia: No se encontró vehículo con patente " << patente << endl;
+            return;
+        }
+
+        // Crear cliente
         Cliente cliente(nombre, apellido, edad, dni);
 
-        cout << "Contrato #" << id_contrato << " - Cliente: " << nombre << " " << apellido
-             << " - Vehículo: " << patente << " - Estado: " << (activo ? "Activo" : "Cerrado") << endl;
+        // Crear contrato
+        Contrato* contrato = new Contrato(id_contrato, cliente, vehiculo, tiempo, cargo_extra);
+        contrato->setcosto(costo);
+        // IMPORTANTE: Restaurar el tiempo de inicio desde la BD
+        if (tiempo_inicio_timestamp > 0) {
+            time_t inicio_time = static_cast<time_t>(tiempo_inicio_timestamp);
+            auto inicio_timepoint = system_clock::from_time_t(inicio_time);
+
+            // Restaurar el inicio del contrato
+            contrato->setInicio(inicio_timepoint);
+
+            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
+                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
+        } else {
+            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
+        }
+
+        if (contrato != nullptr) {
+            historial->agregarContrato(contrato);
+        }
     }
 
     sqlite3_finalize(stmt);
-    cout << "Historial cargado: " << historial.size() << " contratos." << endl;
-    return historial;
 }
 
 vector<Contrato*> DataBase::cargarHistorialPorCliente(int dni) {
@@ -653,7 +771,6 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
     }
 
     sqlite3_finalize(stmt);
-    cout << "Se cargaron " << activos.size() << " contratos activos." << endl;
     return activos;
 }
 

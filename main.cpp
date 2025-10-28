@@ -28,7 +28,18 @@ int main() {
     cout << endl;
 
     // Inicializar el menú interactivo
-    menu_simple();
+    funcion_menu();
+
+    DataBase* db = new DataBase("alquiler.db");
+
+    if (db->limpiarDatos()) {
+        std::cout << "Limpieza exitosa!" << std::endl;
+    }
+
+    delete db;  // Cierra la conexión antes de salir
+
+    std::cout << "Presiona Enter para continuar..." << std::endl;
+    std::cin.get();
 
     cout << endl;
     cout << "==================================================" << endl;

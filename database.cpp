@@ -587,26 +587,26 @@ bool DataBase::finalizarContrato(int id_contrato, float costo_final) {
     return resultado;
 }
 
-vector<Contrato*> DataBase::cargarHistorial() {
-    vector<Contrato*> historial;
+void DataBase::cargarHistorial(Historial *historial) {
 
     if (datab == nullptr) {
         cout << "Error: Base de datos no inicializada." << endl;
-        return historial;
+        return;
     }
 
     string sql = "SELECT c.id_contrato, c.dni_cliente, c.patente_vehiculo, "
-                 "c.tiempo_establecido, c.costo, c.cargo_extra, c.activo, "
+                 "c.tiempo_establecido, c.tiempo_inicio, c.costo, c.cargo_extra, "
                  "cl.nombre, cl.apellido, cl.edad "
                  "FROM Contrato c "
-                 "INNER JOIN Cliente cl ON c.dni_cliente = cl.dni "
+                 "JOIN Cliente cl ON c.dni_cliente = cl.dni "
+                 "WHERE c.activo = 0 "
                  "ORDER BY c.id_contrato;";
 
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
         cout << "Error preparando carga de historial: " << sqlite3_errmsg(datab) << endl;
-        return historial;
+        return;
     }
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -614,23 +614,47 @@ vector<Contrato*> DataBase::cargarHistorial() {
         int dni = sqlite3_column_int(stmt, 1);
         string patente = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
         float tiempo = sqlite3_column_double(stmt, 3);
-        float costo = sqlite3_column_double(stmt, 4);
-        float cargo_extra = sqlite3_column_double(stmt, 5);
-        int activo = sqlite3_column_int(stmt, 6);
-
+        sqlite3_int64 tiempo_inicio_timestamp = sqlite3_column_int64(stmt, 4);
+        float costo = sqlite3_column_double(stmt, 5);
+        float cargo_extra = sqlite3_column_double(stmt, 6);
         string nombre = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
         string apellido = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
         int edad = sqlite3_column_int(stmt, 9);
 
+        // Buscar el vehículo
+        Vehiculo* vehiculo = Buscarvehiculoporpatente(patente);
+
+        if (vehiculo == nullptr) {
+            cout << "Advertencia: No se encontró vehículo con patente " << patente << endl;
+            return;
+        }
+
+        // Crear cliente
         Cliente cliente(nombre, apellido, edad, dni);
 
-        cout << "Contrato #" << id_contrato << " - Cliente: " << nombre << " " << apellido
-             << " - Vehículo: " << patente << " - Estado: " << (activo ? "Activo" : "Cerrado") << endl;
+        // Crear contrato
+        Contrato* contrato = new Contrato(id_contrato, cliente, vehiculo, tiempo, cargo_extra);
+        contrato->setcosto(costo);
+        // IMPORTANTE: Restaurar el tiempo de inicio desde la BD
+        if (tiempo_inicio_timestamp > 0) {
+            time_t inicio_time = static_cast<time_t>(tiempo_inicio_timestamp);
+            auto inicio_timepoint = system_clock::from_time_t(inicio_time);
+
+            // Restaurar el inicio del contrato
+            contrato->setInicio(inicio_timepoint);
+
+            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
+                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
+        } else {
+            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
+        }
+
+        if (contrato != nullptr) {
+            historial->agregarContrato(contrato);
+        }
     }
 
     sqlite3_finalize(stmt);
-    cout << "Historial cargado: " << historial.size() << " contratos." << endl;
-    return historial;
 }
 
 vector<Contrato*> DataBase::cargarHistorialPorCliente(int dni) {
@@ -747,7 +771,6 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
     }
 
     sqlite3_finalize(stmt);
-    cout << "Se cargaron " << activos.size() << " contratos activos." << endl;
     return activos;
 }
 

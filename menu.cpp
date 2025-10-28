@@ -4,6 +4,8 @@
 #include <curses.h>
 #include <string>
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #ifdef _WIN32
 #define NOMINMAX
@@ -450,7 +452,7 @@ void funcion_menu() {
         cout << "No se pudo inicializar la interfaz curses." << endl;
         cout << "Usando menu simple en su lugar..." << endl;
         cout << "================================================\n" << endl;
-        Sleep(2000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         menu_simple();
         return;
     }

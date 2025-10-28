@@ -52,7 +52,7 @@ public:
     //=============================================================================
     bool guardarContrato(Contrato contrato);
     bool finalizarContrato(int id_contrato, float costo_final);
-    vector<Contrato*> cargarHistorial();
+    void cargarHistorial(Historial *historial);
     vector<Contrato*> cargarHistorialPorCliente(int dni);
     vector<Contrato*> cargarContratosActivos();
 };

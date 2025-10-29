@@ -6,6 +6,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <algorithm>
+#include <cctype>
 
 #ifdef _WIN32
 #define NOMINMAX
@@ -19,35 +21,144 @@
 
 using namespace std;
 
+// ============= FUNCIONES DE VALIDACIÓN =============
+bool esStringVacio(const string& str) {
+    if (str.empty()) return true;
+    return all_of(str.begin(), str.end(), [](unsigned char c) { return isspace(c); });
+}
+
+bool validarEdad(int edad) {
+    return edad > 0 && edad < 150;
+}
+
+bool validarDNI(int dni) {
+    return dni > 0 && dni < 100000000;
+}
+
+bool validarAnio(int anio) {
+    return anio >= 1900 && anio <= 2025;
+}
+
+bool validarPrecio(float precio) {
+    return precio > 0;
+}
+
+bool validarHoras(float horas) {
+    return horas > 0;
+}
+
 // ============= MENÚS CURSES =============
 
 void menuRegistrarCliente(SistemaAlquiler* sistema) {
-    clear();
-    mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
-    mvprintw(2, 0, "Nombre: ");
-    refresh();
-
-    echo();
     char nombre[100], apellido[100];
     int edad, dni;
 
-    mvgetnstr(2, 8, nombre, 99);
+    // Pedir y validar NOMBRE
+    bool nombreValido = false;
+    while (!nombreValido) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
+        mvprintw(2, 0, "Nombre: ");
+        refresh();
 
-    mvprintw(3, 0, "Apellido: ");
-    mvgetnstr(3, 10, apellido, 99);
+        echo();
+        mvgetnstr(2, 8, nombre, 99);
+        noecho();
 
-    mvprintw(4, 0, "Edad: ");
-    mvscanw(4, 6, "%d", &edad);
+        if (esStringVacio(string(nombre))) {
+            clear();
+            mvprintw(0, 0, "Error: El nombre no puede estar vacio.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else {
+            nombreValido = true;
+        }
+    }
 
-    mvprintw(5, 0, "DNI: ");
-    mvscanw(5, 5, "%d", &dni);
-    noecho();
+    // Pedir y validar APELLIDO
+    bool apellidoValido = false;
+    while (!apellidoValido) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
+        mvprintw(2, 0, "Nombre: %s", nombre);
+        mvprintw(3, 0, "Apellido: ");
+        refresh();
 
+        echo();
+        mvgetnstr(3, 10, apellido, 99);
+        noecho();
+
+        if (esStringVacio(string(apellido))) {
+            clear();
+            mvprintw(0, 0, "Error: El apellido no puede estar vacio.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else {
+            apellidoValido = true;
+        }
+    }
+
+    // Pedir y validar EDAD
+    bool edadValida = false;
+    while (!edadValida) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
+        mvprintw(2, 0, "Nombre: %s", nombre);
+        mvprintw(3, 0, "Apellido: %s", apellido);
+        mvprintw(4, 0, "Edad: ");
+        refresh();
+
+        echo();
+        int resultado = mvscanw(4, 6, "%d", &edad);
+        noecho();
+
+        if (resultado != 1 || !validarEdad(edad)) {
+            clear();
+            mvprintw(0, 0, "Error: La edad debe ser un numero entre 1 y 149.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else {
+            edadValida = true;
+        }
+    }
+
+    // Pedir y validar DNI
+    bool dniValido = false;
+    while (!dniValido) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
+        mvprintw(2, 0, "Nombre: %s", nombre);
+        mvprintw(3, 0, "Apellido: %s", apellido);
+        mvprintw(4, 0, "Edad: %d", edad);
+        mvprintw(5, 0, "DNI: ");
+        refresh();
+
+        echo();
+        int resultado = mvscanw(5, 5, "%d", &dni);
+        noecho();
+
+        if (resultado != 1 || !validarDNI(dni)) {
+            clear();
+            mvprintw(0, 0, "Error: El DNI debe ser un numero valido.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else {
+            dniValido = true;
+        }
+    }
+
+    // Registrar cliente
     clear();
     if (sistema->registrarCliente(string(nombre), string(apellido), edad, dni)) {
         mvprintw(0, 0, "Cliente registrado exitosamente!");
     } else {
-        mvprintw(0, 0, "Error: No se pudo registrar el cliente (quizas ya existe).");
+        mvprintw(0, 0, "Error: No se pudo registrar el cliente (posiblemente ya existe).");
     }
 
     mvprintw(2, 0, "Presiona cualquier tecla para continuar...");
@@ -75,38 +186,165 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         return;
     }
 
-    clear();
-    echo();
-
     char marca[100], patente[100];
     int anio, extra;
     float precio;
 
-    mvprintw(0, 0, "Marca: ");
-    mvgetnstr(0, 7, marca, 99);
+    // Pedir y validar MARCA
+    bool marcaValida = false;
+    while (!marcaValida) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO VEHICULO ===");
+        mvprintw(1, 0, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
+        mvprintw(3, 0, "Marca: ");
+        refresh();
 
-    mvprintw(1, 0, "Patente: ");
-    mvgetnstr(1, 9, patente, 99);
+        echo();
+        mvgetnstr(3, 7, marca, 99);
+        noecho();
 
-    mvprintw(2, 0, "Anio: ");
-    mvscanw(2, 6, "%d", &anio);
+        if (esStringVacio(string(marca))) {
+            clear();
+            mvprintw(0, 0, "Error: La marca no puede estar vacia.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else {
+            marcaValida = true;
+        }
+    }
 
-    mvprintw(3, 0, "Precio base por hora: ");
-    mvscanw(3, 22, "%f", &precio);
+    // Pedir y validar PATENTE
+    bool patenteValida = false;
+    while (!patenteValida) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO VEHICULO ===");
+        mvprintw(1, 0, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
+        mvprintw(3, 0, "Marca: %s", marca);
+        mvprintw(4, 0, "Patente: ");
+        refresh();
+
+        echo();
+        mvgetnstr(4, 9, patente, 99);
+        noecho();
+
+        if (esStringVacio(string(patente))) {
+            clear();
+            mvprintw(0, 0, "Error: La patente no puede estar vacia.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else {
+            patenteValida = true;
+        }
+    }
+
+    // Pedir y validar AÑO
+    bool anioValido = false;
+    while (!anioValido) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO VEHICULO ===");
+        mvprintw(1, 0, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
+        mvprintw(3, 0, "Marca: %s", marca);
+        mvprintw(4, 0, "Patente: %s", patente);
+        mvprintw(5, 0, "Anio: ");
+        refresh();
+
+        echo();
+        int resultado = mvscanw(5, 6, "%d", &anio);
+        noecho();
+
+        if (resultado != 1 || !validarAnio(anio)) {
+            clear();
+            mvprintw(0, 0, "Error: El anio debe estar entre 1900 y 2025.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else {
+            anioValido = true;
+        }
+    }
+
+    // Pedir y validar PRECIO
+    bool precioValido = false;
+    while (!precioValido) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO VEHICULO ===");
+        mvprintw(1, 0, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
+        mvprintw(3, 0, "Marca: %s", marca);
+        mvprintw(4, 0, "Patente: %s", patente);
+        mvprintw(5, 0, "Anio: %d", anio);
+        mvprintw(6, 0, "Precio base por hora: ");
+        refresh();
+
+        echo();
+        int resultado = mvscanw(6, 22, "%f", &precio);
+        noecho();
+
+        if (resultado != 1 || !validarPrecio(precio)) {
+            clear();
+            mvprintw(0, 0, "Error: El precio debe ser mayor a 0.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else {
+            precioValido = true;
+        }
+    }
 
     Vehiculo* vehiculo = nullptr;
 
-    if (tipo == 1) {
-        mvprintw(4, 0, "Numero de puertas: ");
-        mvscanw(4, 19, "%d", &extra);
-        vehiculo = new Auto(string(marca), string(patente), anio, precio, extra);
-    } else {
-        mvprintw(4, 0, "Cilindradas: ");
-        mvscanw(4, 13, "%d", &extra);
-        vehiculo = new Moto(string(marca), string(patente), anio, precio, extra);
-    }
+    // Pedir y validar dato específico según tipo
+    bool extraValido = false;
+    while (!extraValido) {
+        clear();
+        mvprintw(0, 0, "=== REGISTRAR NUEVO VEHICULO ===");
+        mvprintw(1, 0, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
+        mvprintw(3, 0, "Marca: %s", marca);
+        mvprintw(4, 0, "Patente: %s", patente);
+        mvprintw(5, 0, "Anio: %d", anio);
+        mvprintw(6, 0, "Precio base por hora: %.2f", precio);
+        refresh();
 
-    noecho();
+        echo();
+        int resultado;
+
+        if (tipo == 1) {
+            mvprintw(7, 0, "Numero de puertas: ");
+            resultado = mvscanw(7, 19, "%d", &extra);
+            noecho();
+
+            if (resultado != 1 || extra <= 0 || extra > 10) {
+                clear();
+                mvprintw(0, 0, "Error: El numero de puertas debe ser entre 1 y 10.");
+                mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+                refresh();
+                flushinp();
+                getch();
+            } else {
+                extraValido = true;
+                vehiculo = new Auto(string(marca), string(patente), anio, precio, extra);
+            }
+        } else {
+            mvprintw(7, 0, "Cilindradas: ");
+            resultado = mvscanw(7, 13, "%d", &extra);
+            noecho();
+
+            if (resultado != 1 || extra <= 0) {
+                clear();
+                mvprintw(0, 0, "Error: Las cilindradas deben ser mayores a 0.");
+                mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+                refresh();
+                flushinp();
+                getch();
+            } else {
+                extraValido = true;
+                vehiculo = new Moto(string(marca), string(patente), anio, precio, extra);
+            }
+        }
+    }
 
     clear();
     if (sistema->registrarVehiculo(vehiculo)) {
@@ -121,23 +359,83 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
 }
 
 void menuCrearContrato(SistemaAlquiler* sistema) {
-    clear();
-    mvprintw(0, 0, "=== CREAR NUEVO CONTRATO ===");
-
-    echo();
     char patente[100];
     int dni;
     float horas;
 
-    mvprintw(2, 0, "DNI del cliente: ");
-    mvscanw(2, 17, "%d", &dni);
+    // Pedir y validar DNI
+    bool dniValido = false;
+    while (!dniValido) {
+        clear();
+        mvprintw(0, 0, "=== CREAR NUEVO CONTRATO ===");
+        mvprintw(2, 0, "DNI del cliente: ");
+        refresh();
 
-    mvprintw(3, 0, "Patente del vehiculo: ");
-    mvgetnstr(3, 22, patente, 99);
+        echo();
+        int resultado = mvscanw(2, 17, "%d", &dni);
+        noecho();
 
-    mvprintw(4, 0, "Horas de alquiler: ");
-    mvscanw(4, 19, "%f", &horas);
-    noecho();
+        if (resultado != 1 || !validarDNI(dni)) {
+            clear();
+            mvprintw(0, 0, "Error: DNI invalido.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else {
+            dniValido = true;
+        }
+    }
+
+    // Pedir y validar PATENTE
+    bool patenteValida = false;
+    while (!patenteValida) {
+        clear();
+        mvprintw(0, 0, "=== CREAR NUEVO CONTRATO ===");
+        mvprintw(2, 0, "DNI del cliente: %d", dni);
+        mvprintw(3, 0, "Patente del vehiculo: ");
+        refresh();
+
+        echo();
+        mvgetnstr(3, 22, patente, 99);
+        noecho();
+
+        if (esStringVacio(string(patente))) {
+            clear();
+            mvprintw(0, 0, "Error: La patente no puede estar vacia.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else {
+            patenteValida = true;
+        }
+    }
+
+    // Pedir y validar HORAS
+    bool horasValidas = false;
+    while (!horasValidas) {
+        clear();
+        mvprintw(0, 0, "=== CREAR NUEVO CONTRATO ===");
+        mvprintw(2, 0, "DNI del cliente: %d", dni);
+        mvprintw(3, 0, "Patente del vehiculo: %s", patente);
+        mvprintw(4, 0, "Horas de alquiler: ");
+        refresh();
+
+        echo();
+        int resultado = mvscanw(4, 19, "%f", &horas);
+        noecho();
+
+        if (resultado != 1 || !validarHoras(horas)) {
+            clear();
+            mvprintw(0, 0, "Error: Las horas deben ser mayores a 0.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else {
+            horasValidas = true;
+        }
+    }
 
     clear();
     Contrato* contrato = sistema->crearNuevoContrato(dni, string(patente), horas);
@@ -156,25 +454,41 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
 }
 
 void menuCerrarContrato(SistemaAlquiler* sistema) {
-    clear();
-    mvprintw(0, 0, "=== CERRAR CONTRATO ===");
+    bool datosValidos = false;
 
-    echo();
-    int id;
-    mvprintw(2, 0, "ID del contrato a cerrar: ");
-    mvscanw(2, 26, "%d", &id);
-    noecho();
+    while (!datosValidos) {
+        clear();
+        mvprintw(0, 0, "=== CERRAR CONTRATO ===");
 
-    clear();
-    if (sistema->cerrarContrato(id)) {
-        mvprintw(0, 0, "Contrato cerrado exitosamente!");
-    } else {
-        mvprintw(0, 0, "Error: No se pudo cerrar el contrato.");
+        echo();
+        int id;
+        mvprintw(2, 0, "ID del contrato a cerrar: ");
+        int resultado = mvscanw(2, 26, "%d", &id);
+        noecho();
+
+        if (resultado != 1 || id <= 0) {
+            clear();
+            mvprintw(0, 0, "Error: ID invalido. Debe ser un numero mayor a 0.");
+            mvprintw(2, 0, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+            continue;
+        }
+
+        datosValidos = true;
+
+        clear();
+        if (sistema->cerrarContrato(id)) {
+            mvprintw(0, 0, "Contrato cerrado exitosamente!");
+        } else {
+            mvprintw(0, 0, "Error: No se pudo cerrar el contrato.");
+        }
+
+        mvprintw(2, 0, "Presiona cualquier tecla para continuar...");
+        refresh();
+        getch();
     }
-
-    mvprintw(2, 0, "Presiona cualquier tecla para continuar...");
-    refresh();
-    getch();
 }
 
 void menuLimpiarBaseDatos() {
@@ -197,14 +511,12 @@ void menuLimpiarBaseDatos() {
         mvprintw(0, 0, "Limpiando base de datos...");
         refresh();
 
-        // Salir de curses
         endwin();
 
-        // Crear una conexión NUEVA y limpia para limpiar
         {
             DataBase db_temp("alquiler.db");
             db_temp.limpiarDatos();
-        } // El destructor cierra la conexión
+        }
 
         cout << "\nBase de datos limpiada exitosamente!" << endl;
         cout << "El programa se reiniciara..." << endl;
@@ -212,7 +524,6 @@ void menuLimpiarBaseDatos() {
         cin.ignore();
         cin.get();
 
-        // NO reiniciar curses, salir del programa
         exit(0);
     } else {
         clear();
@@ -223,7 +534,85 @@ void menuLimpiarBaseDatos() {
     }
 }
 
-// ============= FUNCIÓN PRINCIPAL =============
+// ============= DIBUJO Menú =============
+
+// Dibuja un recuadro con título centrado
+void dibujarRecuadro(int y, int x, int alto, int ancho, const char* titulo = nullptr) {
+    // Esquinas y bordes usando caracteres ASCII extendidos
+    // Si no se ven bien, usa '+', '-', '|'
+
+    // Esquina superior izquierda
+    mvaddch(y, x, ACS_ULCORNER);
+    // Línea superior
+    for (int i = 1; i < ancho - 1; i++) {
+        mvaddch(y, x + i, ACS_HLINE);
+    }
+    // Esquina superior derecha
+    mvaddch(y, x + ancho - 1, ACS_URCORNER);
+
+    // Lados verticales
+    for (int i = 1; i < alto - 1; i++) {
+        mvaddch(y + i, x, ACS_VLINE);
+        mvaddch(y + i, x + ancho - 1, ACS_VLINE);
+    }
+
+    // Esquina inferior izquierda
+    mvaddch(y + alto - 1, x, ACS_LLCORNER);
+    // Línea inferior
+    for (int i = 1; i < ancho - 1; i++) {
+        mvaddch(y + alto - 1, x + i, ACS_HLINE);
+    }
+    // Esquina inferior derecha
+    mvaddch(y + alto - 1, x + ancho - 1, ACS_LRCORNER);
+
+    // Si hay título, dibujarlo centrado en el borde superior
+    if (titulo != nullptr) {
+        int titulo_len = strlen(titulo);
+        int titulo_x = x + (ancho - titulo_len - 4) / 2;
+        mvprintw(y, titulo_x, "[ %s ]", titulo);
+    }
+}
+
+// Muestra un mensaje centrado en un recuadro
+void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruccion = "Presiona cualquier tecla para continuar...") {
+    clear();
+
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    // Calcular dimensiones del recuadro
+    int mensaje_len = strlen(mensaje);
+    int instruccion_len = strlen(instruccion);
+    int ancho_contenido = (mensaje_len > instruccion_len ? mensaje_len : instruccion_len) + 4;
+
+    if (ancho_contenido > max_x - 4) {
+        ancho_contenido = max_x - 4;
+    }
+
+    int alto_recuadro = 6;
+    int ancho_recuadro = ancho_contenido + 4;
+
+    // Centrar el recuadro
+    int y_inicio = (max_y - alto_recuadro) / 2;
+    int x_inicio = (max_x - ancho_recuadro) / 2;
+
+    // Dibujar recuadro
+    dibujarRecuadro(y_inicio, x_inicio, alto_recuadro, ancho_recuadro, titulo);
+
+    // Mostrar mensaje centrado
+    int mensaje_x = x_inicio + (ancho_recuadro - mensaje_len) / 2;
+    mvprintw(y_inicio + 2, mensaje_x, "%s", mensaje);
+
+    // Mostrar instrucción centrada
+    int instr_x = x_inicio + (ancho_recuadro - instruccion_len) / 2;
+    mvprintw(y_inicio + 4, instr_x, "%s", instruccion);
+
+    refresh();
+    getch();
+}
+
+// ============= Menu principal =============
+
 void funcion_menu() {
     DataBase db("alquiler.db");
     db.crearTablas();
@@ -269,7 +658,6 @@ void funcion_menu() {
 
             if (altura < 10) {
                 cout << "La ventana sigue siendo muy pequena." << endl;
-                cout << "Usando menu simple..." << endl;
                 Sleep(2000);
                 return;
             }
@@ -281,7 +669,6 @@ void funcion_menu() {
     if (mainwin == NULL) {
         cout << "\n================================================" << endl;
         cout << "No se pudo inicializar la interfaz curses." << endl;
-        cout << "Usando menu simple en su lugar..." << endl;
         cout << "================================================\n" << endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         return;
@@ -310,17 +697,48 @@ void funcion_menu() {
 
     while (true) {
         clear();
-        mvprintw(0, 0, "=== SISTEMA DE ALQUILER DE VEHICULOS ===");
-        mvprintw(1, 0, "Usa las flechas para navegar y Enter para seleccionar:");
-        mvprintw(2, 0, "");
 
+        // Obtener dimensiones de la pantalla
+        int max_y, max_x;
+        getmaxyx(stdscr, max_y, max_x);
+
+        // Calcular dimensiones del menú
+        int menu_ancho = 50;  // Ancho fijo del menú
+        int menu_alto = n_opciones + 6;  // Altura: opciones + título + bordes + instrucciones
+
+        // Centrar el menú
+        int y_inicio = (max_y - menu_alto) / 2;
+        int x_inicio = (max_x - menu_ancho) / 2;
+
+        // Dibujar recuadro principal
+        dibujarRecuadro(y_inicio, x_inicio, menu_alto, menu_ancho, "SISTEMA DE ALQUILER");
+
+        // Mostrar instrucciones
+        const char* instrucciones = "Usa flechas y Enter";
+        int instr_x = x_inicio + (menu_ancho - strlen(instrucciones)) / 2;
+        mvprintw(y_inicio + 2, instr_x, "%s", instrucciones);
+
+        // Dibujar separador
+        mvaddch(y_inicio + 3, x_inicio, ACS_LTEE);
+        for (int i = 1; i < menu_ancho - 1; i++) {
+            mvaddch(y_inicio + 3, x_inicio + i, ACS_HLINE);
+        }
+        mvaddch(y_inicio + 3, x_inicio + menu_ancho - 1, ACS_RTEE);
+
+        // Dibujar opciones centradas
         for (int i = 0; i < n_opciones; ++i) {
+            int y_opcion = y_inicio + 4 + i;
+
             if (i == seleccion) {
                 attron(A_REVERSE);
-            }
-            mvprintw(i + 3, 2, "%s", opciones[i]);
-            if (i == seleccion) {
+                // Dibujar opción resaltada con padding
+                int opcion_x = x_inicio + 2;
+                mvprintw(y_opcion, opcion_x, "  %-*s  ", menu_ancho - 6, opciones[i]);
                 attroff(A_REVERSE);
+            } else {
+                // Opción normal
+                int opcion_x = x_inicio + 4;
+                mvprintw(y_opcion, opcion_x, "%-*s", menu_ancho - 8, opciones[i]);
             }
         }
 
@@ -335,6 +753,7 @@ void funcion_menu() {
                 seleccion = (seleccion + 1) % n_opciones;
                 break;
             case '\n':
+            case '\r':
                 clear();
                 refresh();
 
@@ -413,9 +832,9 @@ void funcion_menu() {
                         break;
                     case 9:
                         menuLimpiarBaseDatos();
-                        // La función hace exit(0) si se confirma
                         break;
                     case 10:
+                        mostrarMensaje("SALIR", "Gracias por usar el sistema!");
                         endwin();
                         return;
                 }

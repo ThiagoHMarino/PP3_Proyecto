@@ -534,8 +534,7 @@ void menuLimpiarBaseDatos() {
     }
 }
 
-// ============= DIBUJO Menú =============
-
+// ============= RECUADRO Y CENTRADO =============
 // Dibuja un recuadro con título centrado
 void dibujarRecuadro(int y, int x, int alto, int ancho, const char* titulo = nullptr) {
     // Esquinas y bordes usando caracteres ASCII extendidos
@@ -611,7 +610,7 @@ void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruc
     getch();
 }
 
-// ============= Menu principal =============
+// ============= Menú principal =============
 
 void funcion_menu() {
     DataBase db("alquiler.db");

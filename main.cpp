@@ -32,6 +32,7 @@ int main() {
 
     DataBase* db = new DataBase("alquiler.db");
 
+
     delete db;  // Cierra la conexión antes de salir
 
     std::cout << "Presiona Enter para continuar..." << std::endl;

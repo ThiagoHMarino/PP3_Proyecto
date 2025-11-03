@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libncurses5-dev \
     libncursesw5-dev \
+    libx11-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ===============================
@@ -27,10 +28,11 @@ RUN apt-get update && apt-get install -y \
 # ===============================
 WORKDIR /tmp
 RUN git clone https://github.com/wmcbrine/PDCurses.git && \
-    cd PDCurses && \
-    make -C pdcurses && \
-    make -C pdcurses install PREFIX=/usr/local && \
-    cd .. && rm -rf PDCurses
+    cd PDCurses/X11 && \
+    make && \
+    cp libpdcurses.a /usr/local/lib/ && \
+    cp -r curses.h /usr/local/include/ && \
+    cd ../.. && rm -rf PDCurses
 
 # ===============================
 # Instalar librerías Python

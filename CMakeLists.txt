@@ -21,3 +21,4 @@ target_include_directories(PP3_Proyecto PRIVATE
 
 find_package(unofficial-pdcurses CONFIG REQUIRED)
 target_link_libraries(PP3_Proyecto PRIVATE unofficial::pdcurses::pdcurses)
+#target_link_libraries(PP3_Proyecto PRIVATE ncurses)

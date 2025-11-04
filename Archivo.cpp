@@ -315,6 +315,7 @@ bool SistemaAlquiler::cerrarContrato(int id_contrato) {
 }
 
 void SistemaAlquiler::listarVehiculosDisponibles() {
+    system("clear");
     cout << "=====================================" << endl;
     cout << "VEHICULOS DISPONIBLES" << endl;
     cout << "=====================================" << endl;
@@ -336,6 +337,7 @@ void SistemaAlquiler::listarVehiculosDisponibles() {
 }
 
 void SistemaAlquiler::listarTodosVehiculos() {
+    system("clear");
     cout << "=====================================" << endl;
     cout << "TODOS LOS VEHICULOS" << endl;
     cout << "=====================================" << endl;
@@ -349,6 +351,7 @@ void SistemaAlquiler::listarTodosVehiculos() {
 }
 
 void SistemaAlquiler::listarContratos() {
+    system("clear");
     cout << "=====================================" << endl;
     cout << "CONTRATOS ACTIVOS" << endl;
     cout << "=====================================" << endl;
@@ -365,6 +368,7 @@ void SistemaAlquiler::listarContratos() {
 }
 
 void SistemaAlquiler::listarClientesRegistrados() {
+    system("clear");
     cout << "=====================================" << endl;
     cout << "CLIENTES REGISTRADOS" << endl;
     cout << "=====================================" << endl;
@@ -378,10 +382,12 @@ void SistemaAlquiler::listarClientesRegistrados() {
 }
 
 void SistemaAlquiler::mostrarHistorialCompleto() {
+    system("clear");
     historial.mostrarHistorial();
 }
 
 void SistemaAlquiler::mostrarHistorialCliente(int dni) {
+    system("clear");
     Cliente* cliente = buscarCliente(dni);
     if (cliente != nullptr) {
         historial.mostrarContratoPorCliente(*cliente);

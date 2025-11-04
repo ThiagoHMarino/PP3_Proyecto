@@ -53,16 +53,35 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     char nombre[100], apellido[100];
     int edad, dni;
 
+    // Obtener dimensiones de la pantalla
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    // Calcular dimensiones del menú
+    int menu_ancho = 50;  // Ancho fijo del menú
+    int menu_alto = 17;  // Altura: opciones + título + bordes + instrucciones
+
+    // Centrar el menú
+    int y_inicio = (max_y - menu_alto) / 2;
+    int x_inicio = (max_x - menu_ancho) / 2;
+
+    // Mostrar título centrado dentro del menú
+    const char* titulo = "=== REGISTRAR NUEVO CLIENTE ===";
+    int titulo_len = strlen(titulo);
+
+// calcular posición X centrada dentro del ancho del menú
+    int titulo_x = x_inicio + (menu_ancho - titulo_len) / 2;
+
     // Pedir y validar NOMBRE
     bool nombreValido = false;
     while (!nombreValido) {
         clear();
-        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
-        mvprintw(2, 0, "Nombre: ");
+        mvprintw(y_inicio, titulo_x, "%s", titulo);
+        mvprintw(y_inicio + 2, x_inicio, "Nombre: ");
         refresh();
 
         echo();
-        mvgetnstr(2, 8, nombre, 99);
+        mvgetnstr(y_inicio + 2, x_inicio + 8, nombre, 99);
         noecho();
 
         if (esStringVacio(string(nombre))) {
@@ -80,13 +99,13 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     bool apellidoValido = false;
     while (!apellidoValido) {
         clear();
-        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
-        mvprintw(2, 0, "Nombre: %s", nombre);
-        mvprintw(3, 0, "Apellido: ");
+        mvprintw(y_inicio, titulo_x, "%s", titulo);
+        mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
+        mvprintw(y_inicio+3, x_inicio, "Apellido: ");
         refresh();
 
         echo();
-        mvgetnstr(3, 10, apellido, 99);
+        mvgetnstr(y_inicio+3, x_inicio+10, apellido, 99);
         noecho();
 
         if (esStringVacio(string(apellido))) {
@@ -104,14 +123,14 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     bool edadValida = false;
     while (!edadValida) {
         clear();
-        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
-        mvprintw(2, 0, "Nombre: %s", nombre);
-        mvprintw(3, 0, "Apellido: %s", apellido);
-        mvprintw(4, 0, "Edad: ");
+        mvprintw(y_inicio, titulo_x, "%s", titulo);
+        mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
+        mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
+        mvprintw(y_inicio + 4, x_inicio, "Edad: ");
         refresh();
 
         echo();
-        int resultado = mvscanw(4, 6, "%d", &edad);
+        int resultado = mvscanw(y_inicio + 4, x_inicio + 6, "%d", &edad);
         noecho();
 
         if (resultado != 1 || !validarEdad(edad)) {
@@ -130,15 +149,15 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     bool dniValido = false;
     while (!dniValido) {
         clear();
-        mvprintw(0, 0, "=== REGISTRAR NUEVO CLIENTE ===");
-        mvprintw(2, 0, "Nombre: %s", nombre);
-        mvprintw(3, 0, "Apellido: %s", apellido);
-        mvprintw(4, 0, "Edad: %d", edad);
-        mvprintw(5, 0, "DNI: ");
+        mvprintw(y_inicio, titulo_x, "%s", titulo);
+        mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
+        mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
+        mvprintw(y_inicio + 4, x_inicio, "Edad: %d", edad);
+        mvprintw(y_inicio + 5, x_inicio, "DNI: ");
         refresh();
 
         echo();
-        int resultado = mvscanw(5, 5, "%d", &dni);
+        int resultado = mvscanw(y_inicio + 5, x_inicio + 4, "%d", &dni);
         noecho();
 
         if (resultado != 1 || !validarDNI(dni)) {

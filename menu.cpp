@@ -8,6 +8,8 @@
 #include <thread>
 #include <algorithm>
 #include <cctype>
+#include <string.h>
+
 
 #ifdef _WIN32
 #define NOMINMAX

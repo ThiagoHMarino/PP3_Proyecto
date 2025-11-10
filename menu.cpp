@@ -1,7 +1,25 @@
 #include "menu.h"
 #include "Archivo.h"
 #include "database.h"
-#include <curses.h>
+
+// ============================================
+// INCLUIR LA LIBRERÍA CURSES CORRECTA
+// ============================================
+#ifdef _WIN32
+#define NOMINMAX
+    #define WIN32_LEAN_AND_MEAN
+    #ifndef NOGDI
+        #define NOGDI
+    #endif
+    #include <windows.h>
+    #include <conio.h>
+    #include <curses.h>
+#else
+#include <ncurses.h>
+#include <termios.h>
+#include <unistd.h>
+#endif
+
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -9,17 +27,62 @@
 #include <algorithm>
 #include <cctype>
 
+using namespace std;
+
+// ============================================
+// FUNCIÓN PARA LIMPIAR EL BUFFER DE ENTRADA
+// ============================================
+void flush_input() {
 #ifdef _WIN32
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#ifndef NOGDI
-#define NOGDI
+    FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+#elif defined(__unix__) || defined(__APPLE__)
+    tcflush(STDIN_FILENO, TCIFLUSH);
 #endif
-#include <windows.h>
-#undef NOGDI
+}
+
+// ============================================
+// SALIR DE CURSES TEMPORALMENTE
+// ============================================
+void salirModoCurses() {
+    printf("\033[?1003l");
+    fflush(stdout);
+    mousemask(0, NULL);
+
+#ifndef _WIN32
+    usleep(10000);
+#else
+    Sleep(10);
 #endif
 
-using namespace std;
+    flush_input();
+    def_prog_mode();
+    endwin();
+}
+
+// ============================================
+// REENTRAR EN CURSES
+// ============================================
+void entrarModoCurses() {
+    reset_prog_mode();
+    refresh();
+    flush_input();
+
+#ifndef _WIN32
+    usleep(10000);
+#else
+    Sleep(10);
+#endif
+
+    mouseinterval(0);
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    printf("\033[?1003h");
+    fflush(stdout);
+
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+}
 
 // ============= FUNCIONES DE VALIDACIÓN =============
 bool esStringVacio(const string& str) {
@@ -130,7 +193,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 4, x_inicio + 6, "%d", &edad);
+        int resultado = mvscanw(y_inicio + 4, x_inicio + 6,const_cast<char*>("%d"), &edad);
         noecho();
 
         if (resultado != 1 || !validarEdad(edad)) {
@@ -158,7 +221,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 5, x_inicio + 4, "%d", &dni);
+        int resultado = mvscanw(y_inicio + 5, x_inicio + 4, const_cast<char*>("%d"), &dni);
         noecho();
 
         if (resultado != 1 || !validarDNI(dni)) {
@@ -304,7 +367,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 6, x_inicio + 6, "%d", &anio);
+        int resultado = mvscanw(y_inicio + 6, x_inicio + 6, const_cast<char*>("%d"), &anio);
         noecho();
 
         if (resultado != 1 || !validarAnio(anio)) {
@@ -333,7 +396,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 7, x_inicio + 22, "%f", &precio);
+        int resultado = mvscanw(y_inicio + 7, x_inicio + 22, const_cast<char*>("%f"), &precio);
         noecho();
 
         if (resultado != 1 || !validarPrecio(precio)) {
@@ -368,7 +431,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
 
         if (tipo == 1) {
             mvprintw(y_inicio + 8, x_inicio, "Numero de puertas: ");
-            resultado = mvscanw(y_inicio + 8, x_inicio + 19, "%d", &extra);
+            resultado = mvscanw(y_inicio + 8, x_inicio + 19, const_cast<char*>("%d"), &extra);
             noecho();
 
             if (resultado != 1 || extra <= 0 || extra > 10) {
@@ -385,7 +448,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
             }
         } else {
             mvprintw(y_inicio + 8, x_inicio, "Cilindradas: ");
-            resultado = mvscanw(y_inicio + 8, x_inicio + 13, "%d", &extra);
+            resultado = mvscanw(y_inicio + 8, x_inicio + 13, const_cast<char*>("%d"), &extra);
             noecho();
 
             if (resultado != 1 || extra <= 0) {
@@ -453,7 +516,7 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 3, x_inicio + 17, "%d", &dni);
+        int resultado = mvscanw(y_inicio + 3, x_inicio + 17, const_cast<char*>("%d"), &dni);
         noecho();
 
         if (resultado != 1 || !validarDNI(dni)) {
@@ -505,7 +568,7 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 5, x_inicio + 19, "%f", &horas);
+        int resultado = mvscanw(y_inicio + 5, x_inicio + 19, const_cast<char*>("%f"), &horas);
         noecho();
 
         if (resultado != 1 || !validarHoras(horas)) {
@@ -531,7 +594,7 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 4, msg_x, "%s", msg_exito);
 
         char id_msg[50];
-        sprintf(id_msg, "ID del contrato: %d", contrato->getId());
+        snprintf(id_msg, sizeof(id_msg), "ID del contrato: %d", contrato->getId());
         int id_x = x_inicio + (menu_ancho - strlen(id_msg)) / 2;
         mvprintw(y_inicio + 5, id_x, "%s", id_msg);
     } else {
@@ -576,7 +639,7 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
         echo();
         int id;
         mvprintw(y_inicio + 3, x_inicio, "ID del contrato a cerrar: ");
-        int resultado = mvscanw(y_inicio + 3, x_inicio + 26, "%d", &id);
+        int resultado = mvscanw(y_inicio + 3, x_inicio + 26, const_cast<char*>("%d"), &id);
         noecho();
 
         if (resultado != 1 || id <= 0) {
@@ -768,16 +831,25 @@ void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruc
 
 // ============= Menú principal =============
 
+// MENÚ PRINCIPAL (CON MOUSE Y TECLADO)
+// ============================================
 void funcion_menu() {
     DataBase db("alquiler.db");
     db.crearTablas();
     SistemaAlquiler sistema(&db);
 
-    cout << "\nIntentando inicializar interfaz grafica..." << endl;
-
+    // === Inicialización segura del entorno curses ===
+    initscr();             // <-- ESTA ES LA CLAVE (antes de usar cbreak/noecho)
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+    curs_set(0);
+
+    // Activar soporte de mouse (click + hover)
+    mouseinterval(0);
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    printf("\033[?1003h"); // Activar tracking extendido
+    fflush(stdout);
 
     const char *opciones[] = {
             "1. Registrar Cliente",
@@ -799,143 +871,130 @@ void funcion_menu() {
     while (true) {
         clear();
 
-        // Obtener dimensiones de la pantalla
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
 
-        // Calcular dimensiones del menú
-        int menu_ancho = 50;  // Ancho fijo del menú
-        int menu_alto = n_opciones + 6;  // Altura: opciones + título + bordes + instrucciones
+        int menu_ancho = 50;
+        int menu_alto = n_opciones + 6;
 
-        // Centrar el menú
         int y_inicio = (max_y - menu_alto) / 2;
         int x_inicio = (max_x - menu_ancho) / 2;
 
-        // Dibujar recuadro principal
         dibujarRecuadro(y_inicio, x_inicio, menu_alto, menu_ancho, "SISTEMA DE ALQUILER");
 
-        // Mostrar instrucciones
-        const char* instrucciones = "Usa flechas y Enter";
+        const char *instrucciones = "Usa flechas, Enter o Mouse";
         int instr_x = x_inicio + (menu_ancho - strlen(instrucciones)) / 2;
         mvprintw(y_inicio + 2, instr_x, "%s", instrucciones);
 
-        // Dibujar separador
         mvaddch(y_inicio + 3, x_inicio, ACS_LTEE);
         for (int i = 1; i < menu_ancho - 1; i++) {
             mvaddch(y_inicio + 3, x_inicio + i, ACS_HLINE);
         }
         mvaddch(y_inicio + 3, x_inicio + menu_ancho - 1, ACS_RTEE);
 
-        // Dibujar opciones centradas
         for (int i = 0; i < n_opciones; ++i) {
             int y_opcion = y_inicio + 4 + i;
+            int opcion_x = (i == seleccion) ? x_inicio + 2 : x_inicio + 4;
 
-            if (i == seleccion) {
+            if (i == seleccion)
                 attron(A_REVERSE);
-                // Dibujar opción resaltada con padding
-                int opcion_x = x_inicio + 2;
-                mvprintw(y_opcion, opcion_x, "  %-*s  ", menu_ancho - 6, opciones[i]);
+
+            mvprintw(y_opcion, opcion_x, "%-*s", menu_ancho - 8, opciones[i]);
+
+            if (i == seleccion)
                 attroff(A_REVERSE);
-            } else {
-                // Opción normal
-                int opcion_x = x_inicio + 4;
-                mvprintw(y_opcion, opcion_x, "%-*s", menu_ancho - 8, opciones[i]);
-            }
         }
 
         refresh();
         int ch = getch();
 
+        if (ch == KEY_MOUSE) {
+            MEVENT me;
+            if (getmouse(&me) == OK) {
+                // Hover o clic
+                if (me.x >= x_inicio + 2 && me.x < x_inicio + menu_ancho - 2) {
+                    int hovered = me.y - (y_inicio + 4);
+                    if (hovered >= 0 && hovered < n_opciones)
+                        seleccion = hovered;
+                }
+
+                if (me.bstate & (BUTTON1_CLICKED | BUTTON1_RELEASED)) {
+                    int idx = me.y - (y_inicio + 4);
+                    if (idx >= 0 && idx < n_opciones) {
+                        seleccion = idx;
+                        ch = '\n';
+                    }
+                }
+            }
+        }
+
         switch (ch) {
             case KEY_UP:
                 seleccion = (seleccion - 1 + n_opciones) % n_opciones;
                 break;
+
             case KEY_DOWN:
                 seleccion = (seleccion + 1) % n_opciones;
                 break;
+
             case '\n':
             case '\r':
                 clear();
                 refresh();
 
-                switch(seleccion) {
-                    case 0:
-                        menuRegistrarCliente(&sistema);
-                        break;
-                    case 1:
-                        menuRegistrarVehiculo(&sistema);
-                        break;
+                switch (seleccion) {
+                    case 0: menuRegistrarCliente(&sistema); break;
+                    case 1: menuRegistrarVehiculo(&sistema); break;
+
                     case 2:
-                        endwin();
-                        cout << endl;
+                        salirModoCurses();
                         sistema.listarClientesRegistrados();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        entrarModoCurses();
                         break;
+
                     case 3:
-                        endwin();
-                        cout << endl;
+                        salirModoCurses();
                         sistema.listarVehiculosDisponibles();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        entrarModoCurses();
                         break;
+
                     case 4:
-                        endwin();
-                        cout << endl;
+                        salirModoCurses();
                         sistema.listarTodosVehiculos();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        entrarModoCurses();
                         break;
-                    case 5:
-                        menuCrearContrato(&sistema);
-                        break;
-                    case 6:
-                        menuCerrarContrato(&sistema);
-                        break;
+
+                    case 5: menuCrearContrato(&sistema); break;
+                    case 6: menuCerrarContrato(&sistema); break;
+
                     case 7:
-                        endwin();
-                        cout << endl;
+                        salirModoCurses();
                         sistema.listarContratos();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        entrarModoCurses();
                         break;
+
                     case 8:
-                        endwin();
-                        cout << endl;
+                        salirModoCurses();
                         sistema.mostrarHistorialCompleto();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        entrarModoCurses();
                         break;
-                    case 9:
-                        menuLimpiarBaseDatos();
-                        break;
+
+                    case 9: menuLimpiarBaseDatos(); break;
+
                     case 10:
                         mostrarMensaje("SALIR", "Gracias por usar el sistema!");
+                        printf("\033[?1003l\n");
+                        fflush(stdout);
                         endwin();
                         return;
                 }
@@ -943,5 +1002,8 @@ void funcion_menu() {
         }
     }
 
+    // Limpieza final defensiva
+    printf("\033[?1003l\n");
+    fflush(stdout);
     endwin();
 }

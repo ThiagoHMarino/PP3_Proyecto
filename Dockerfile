@@ -20,24 +20,12 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libncurses5-dev \
     libncursesw5-dev \
-    libx11-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# ===============================
-# Instalar PDCurses
-# ===============================
-WORKDIR /tmp
-RUN git clone https://github.com/wmcbrine/PDCurses.git && \
-    cd PDCurses/X11 && \
-    make && \
-    cp libpdcurses.a /usr/local/lib/ && \
-    cp -r curses.h /usr/local/include/ && \
-    cd ../.. && rm -rf PDCurses
 
 # ===============================
 # Instalar librerías Python
 # ===============================
-RUN pip install --no-cache-dir pandas scikit-learn matplotlib
+RUN pip3 install --no-cache-dir --break-system-packages pandas scikit-learn matplotlib
 
 # ===============================
 # Configurar entorno del proyecto
@@ -48,7 +36,7 @@ COPY . .
 # ===============================
 # Construir el proyecto C++ con CMake
 # ===============================
-RUN mkdir build && cd build && \
+RUN mkdir -p build && cd build && \
     cmake .. && make
 
 # ===============================

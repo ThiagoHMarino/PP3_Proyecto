@@ -1,7 +1,33 @@
 #include "menu.h"
 #include "Archivo.h"
 #include "database.h"
+
+// ============================================
+// INCLUIR LA LIBRERÍA CURSES CORRECTA
+// ============================================
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
+#include <chrono>
+#include <thread>
+
+#ifdef _WIN32
 #include <curses.h>
+    #define NOMINMAX
+    #define WIN32_LEAN_AND_MEAN
+    #ifndef NOGDI
+    #define NOGDI
+    #endif
+    #include <windows.h>
+    #undef NOGDI
+#else
+#include <ncurses.h>
+#include <unistd.h>
+#endif
+
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -9,17 +35,89 @@
 #include <algorithm>
 #include <cctype>
 
+using namespace std;
+
+// ============================================
+// FUNCIONES DE UTILIDAD MULTIPLATAFORMA
+// ============================================
+
+void limpiar_pantalla() {
 #ifdef _WIN32
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#ifndef NOGDI
-#define NOGDI
+    system("cls");
+#else
+    system("clear");
 #endif
-#include <windows.h>
-#undef NOGDI
+}
+
+void dormir_ms(int ms) {
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
+}
+
+void flush_input() {
+#ifdef _WIN32
+    // Windows: vaciar el buffer de consola
+    FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+#else
+    // POSIX: descartar datos pendientes en stdin
+    tcflush(STDIN_FILENO, TCIFLUSH);
+#endif
+}
+
+void salirModoCurses() {
+    // 1) apagar tracking hover en el terminal (escape 1003)
+    printf("\033[?1003l");
+    fflush(stdout);
+
+    // 2) desactivar máscara de mouse en curses
+    mousemask(0, NULL);
+
+    // 3) permitir que el terminal procese lo anterior (pequeña pausa)
+#ifndef _WIN32
+    usleep(10000); // 10 ms
+#else
+    Sleep(10);
 #endif
 
-using namespace std;
+    // 4) limpiar el buffer de entrada para quitar secuencias pendientes
+    flush_input();
+
+    // 5) guardar modo y salir de curses
+    def_prog_mode();
+    endwin();
+}
+
+void entrarModoCurses() {
+    // Restaurar modo curses previamente guardado (no initscr)
+    reset_prog_mode();
+    refresh();
+
+    // Limpiar entrada por si quedó algo
+    flush_input();
+
+    // Pequeña pausa para estabilizar el terminal
+#ifndef _WIN32
+    usleep(10000);
+#else
+    Sleep(10);
+#endif
+
+    // Reactivar mouse / hover
+    mouseinterval(0);
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    printf("\033[?1003h");
+    fflush(stdout);
+
+    // Asegurar modo de teclado / curses
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+}
+
 
 // ============= FUNCIONES DE VALIDACIÓN =============
 bool esStringVacio(const string& str) {
@@ -130,7 +228,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 4, x_inicio + 6, "%d", &edad);
+        int resultado = mvwscanw(stdscr,y_inicio + 4, x_inicio + 6, const_cast<char*>("%d") , &edad);
         noecho();
 
         if (resultado != 1 || !validarEdad(edad)) {
@@ -158,7 +256,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 5, x_inicio + 4, "%d", &dni);
+        int resultado = mvwscanw(stdscr,y_inicio + 5, x_inicio + 4, const_cast<char*>("%d"), &dni);
         noecho();
 
         if (resultado != 1 || !validarDNI(dni)) {
@@ -304,7 +402,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 6, x_inicio + 6, "%d", &anio);
+        int resultado = mvwscanw(stdscr,y_inicio + 6, x_inicio + 6, const_cast<char*>("%d"), &anio);
         noecho();
 
         if (resultado != 1 || !validarAnio(anio)) {
@@ -333,7 +431,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 7, x_inicio + 22, "%f", &precio);
+        int resultado = mvwscanw(stdscr,y_inicio + 7, x_inicio + 22, const_cast<char*>("%f"), &precio);
         noecho();
 
         if (resultado != 1 || !validarPrecio(precio)) {
@@ -368,7 +466,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
 
         if (tipo == 1) {
             mvprintw(y_inicio + 8, x_inicio, "Numero de puertas: ");
-            resultado = mvscanw(y_inicio + 8, x_inicio + 19, "%d", &extra);
+            resultado = mvwscanw(stdscr,y_inicio + 8, x_inicio + 19, const_cast<char*>("%d"), &extra);
             noecho();
 
             if (resultado != 1 || extra <= 0 || extra > 10) {
@@ -385,7 +483,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
             }
         } else {
             mvprintw(y_inicio + 8, x_inicio, "Cilindradas: ");
-            resultado = mvscanw(y_inicio + 8, x_inicio + 13, "%d", &extra);
+            resultado = mvwscanw(stdscr,y_inicio + 8, x_inicio + 13, const_cast<char*>("%d"), &extra);
             noecho();
 
             if (resultado != 1 || extra <= 0) {
@@ -453,7 +551,7 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 3, x_inicio + 17, "%d", &dni);
+        int resultado = mvwscanw(stdscr,y_inicio + 3, x_inicio + 17, const_cast<char*>("%d"), &dni);
         noecho();
 
         if (resultado != 1 || !validarDNI(dni)) {
@@ -505,7 +603,7 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 5, x_inicio + 19, "%f", &horas);
+        int resultado = mvwscanw(stdscr,y_inicio + 5, x_inicio + 19, const_cast<char*>("%f"), &horas);
         noecho();
 
         if (resultado != 1 || !validarHoras(horas)) {
@@ -531,7 +629,7 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 4, msg_x, "%s", msg_exito);
 
         char id_msg[50];
-        sprintf(id_msg, "ID del contrato: %d", contrato->getId());
+        snprintf(id_msg, sizeof(id_msg), "ID del contrato: %d", contrato->getId());
         int id_x = x_inicio + (menu_ancho - strlen(id_msg)) / 2;
         mvprintw(y_inicio + 5, id_x, "%s", id_msg);
     } else {
@@ -551,15 +649,12 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
 }
 
 void menuCerrarContrato(SistemaAlquiler* sistema) {
-    // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // Calcular dimensiones del menú
     int menu_ancho = 60;
     int menu_alto = 12;
 
-    // Centrar el menú
     int y_inicio = (max_y - menu_alto) / 2;
     int x_inicio = (max_x - menu_ancho) / 2;
 
@@ -576,7 +671,7 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
         echo();
         int id;
         mvprintw(y_inicio + 3, x_inicio, "ID del contrato a cerrar: ");
-        int resultado = mvscanw(y_inicio + 3, x_inicio + 26, "%d", &id);
+        int resultado = mvwscanw(stdscr,y_inicio + 3, x_inicio + 26, const_cast<char*>("%d"), &id);
         noecho();
 
         if (resultado != 1 || id <= 0) {
@@ -615,15 +710,12 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
 }
 
 void menuLimpiarBaseDatos() {
-    // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // Calcular dimensiones del menú
     int menu_ancho = 60;
     int menu_alto = 14;
 
-    // Centrar el menú
     int y_inicio = (max_y - menu_alto) / 2;
     int x_inicio = (max_x - menu_ancho) / 2;
 
@@ -691,11 +783,7 @@ void menuLimpiarBaseDatos() {
 }
 
 // ============= RECUADRO Y CENTRADO =============
-// Dibuja un recuadro con título centrado
 void dibujarRecuadro(int y, int x, int alto, int ancho, const char* titulo = nullptr) {
-    // Esquinas y bordes usando caracteres ASCII extendidos
-    // Si no se ven bien, usa '+', '-', '|'
-
     // Esquina superior izquierda
     mvaddch(y, x, ACS_ULCORNER);
     // Línea superior
@@ -728,14 +816,12 @@ void dibujarRecuadro(int y, int x, int alto, int ancho, const char* titulo = nul
     }
 }
 
-// Muestra un mensaje centrado en un recuadro
 void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruccion = "Presiona cualquier tecla para continuar...") {
     clear();
 
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // Calcular dimensiones del recuadro
     int mensaje_len = strlen(mensaje);
     int instruccion_len = strlen(instruccion);
     int ancho_contenido = (mensaje_len > instruccion_len ? mensaje_len : instruccion_len) + 4;
@@ -747,18 +833,14 @@ void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruc
     int alto_recuadro = 6;
     int ancho_recuadro = ancho_contenido + 4;
 
-    // Centrar el recuadro
     int y_inicio = (max_y - alto_recuadro) / 2;
     int x_inicio = (max_x - ancho_recuadro) / 2;
 
-    // Dibujar recuadro
     dibujarRecuadro(y_inicio, x_inicio, alto_recuadro, ancho_recuadro, titulo);
 
-    // Mostrar mensaje centrado
     int mensaje_x = x_inicio + (ancho_recuadro - mensaje_len) / 2;
     mvprintw(y_inicio + 2, mensaje_x, "%s", mensaje);
 
-    // Mostrar instrucción centrada
     int instr_x = x_inicio + (ancho_recuadro - instruccion_len) / 2;
     mvprintw(y_inicio + 4, instr_x, "%s", instruccion);
 
@@ -818,9 +900,19 @@ void funcion_menu() {
             }
         }
     }
+#else
+    // En Linux/macOS no es necesario ajustar la ventana manualmente
+    cout << "Sistema macOS detectado. Asegurate de que tu terminal tenga al menos 80x25." << endl;
+    dormir_ms(1000);
 #endif
 
     WINDOW* mainwin = initscr();
+
+    mouseinterval(0); // reduce la espera entre clicks (opcional pero útil)
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    printf("\033[?1003h");   // habilita REPORT_MOUSE_POSITION (hover)
+    fflush(stdout);
+
     if (mainwin == NULL) {
         cout << "\n================================================" << endl;
         cout << "No se pudo inicializar la interfaz curses." << endl;
@@ -829,9 +921,16 @@ void funcion_menu() {
         return;
     }
 
+
+
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+    //MOUSE
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, nullptr);
+    printf("\033[?1003h\n"); // habilita reporte de posición (hover)
+    fflush(stdout);
+    curs_set(0);
 
     const char *opciones[] = {
             "1. Registrar Cliente",
@@ -853,45 +952,36 @@ void funcion_menu() {
     while (true) {
         clear();
 
-        // Obtener dimensiones de la pantalla
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
 
-        // Calcular dimensiones del menú
-        int menu_ancho = 50;  // Ancho fijo del menú
-        int menu_alto = n_opciones + 6;  // Altura: opciones + título + bordes + instrucciones
+        int menu_ancho = 50;
+        int menu_alto = n_opciones + 6;
 
-        // Centrar el menú
         int y_inicio = (max_y - menu_alto) / 2;
         int x_inicio = (max_x - menu_ancho) / 2;
 
-        // Dibujar recuadro principal
         dibujarRecuadro(y_inicio, x_inicio, menu_alto, menu_ancho, "SISTEMA DE ALQUILER");
 
-        // Mostrar instrucciones
-        const char* instrucciones = "Usa flechas y Enter";
+        const char* instrucciones = "Usa flechas, Enter o Mouse";
         int instr_x = x_inicio + (menu_ancho - strlen(instrucciones)) / 2;
         mvprintw(y_inicio + 2, instr_x, "%s", instrucciones);
 
-        // Dibujar separador
         mvaddch(y_inicio + 3, x_inicio, ACS_LTEE);
         for (int i = 1; i < menu_ancho - 1; i++) {
             mvaddch(y_inicio + 3, x_inicio + i, ACS_HLINE);
         }
         mvaddch(y_inicio + 3, x_inicio + menu_ancho - 1, ACS_RTEE);
 
-        // Dibujar opciones centradas
         for (int i = 0; i < n_opciones; ++i) {
             int y_opcion = y_inicio + 4 + i;
 
             if (i == seleccion) {
                 attron(A_REVERSE);
-                // Dibujar opción resaltada con padding
                 int opcion_x = x_inicio + 2;
                 mvprintw(y_opcion, opcion_x, "  %-*s  ", menu_ancho - 6, opciones[i]);
                 attroff(A_REVERSE);
             } else {
-                // Opción normal
                 int opcion_x = x_inicio + 4;
                 mvprintw(y_opcion, opcion_x, "%-*s", menu_ancho - 8, opciones[i]);
             }
@@ -900,13 +990,43 @@ void funcion_menu() {
         refresh();
         int ch = getch();
 
+        if (ch == KEY_MOUSE) {
+            MEVENT me;
+            if (getmouse(&me) == OK) {
+
+                // HOVER: movimiento sin click (REPORT_MOUSE_POSITION o pressed/released)
+                if ((me.bstate & REPORT_MOUSE_POSITION) ||
+                    (me.bstate & BUTTON1_PRESSED) || (me.bstate & BUTTON1_RELEASED) ||
+                    (me.bstate & BUTTON3_PRESSED) || (me.bstate & BUTTON3_RELEASED)) {
+                    if (me.x >= x_inicio + 2 && me.x < x_inicio + menu_ancho - 2) {
+                        int hovered = me.y - (y_inicio + 4);
+                        if (hovered >= 0 && hovered < n_opciones) {
+                            seleccion = hovered;
+                        }
+                    }
+                }
+
+                // CLICK: aceptar LEFT o RIGHT en sus variantes (clicked/pressed/released)
+                if (me.bstate & (BUTTON1_CLICKED | BUTTON1_PRESSED | BUTTON1_RELEASED |
+                                 BUTTON3_CLICKED | BUTTON3_PRESSED | BUTTON3_RELEASED)) {
+                    int idx = me.y - (y_inicio + 4);
+                    if (idx >= 0 && idx < n_opciones) {
+                        seleccion = idx;
+                        ch = '\n'; // simula ENTER y ejecuta la opción
+                    }
+                }
+            }
+        }
+
         switch (ch) {
             case KEY_UP:
                 seleccion = (seleccion - 1 + n_opciones) % n_opciones;
                 break;
+
             case KEY_DOWN:
                 seleccion = (seleccion + 1) % n_opciones;
                 break;
+
             case '\n':
             case '\r':
                 clear();
@@ -916,86 +1036,109 @@ void funcion_menu() {
                     case 0:
                         menuRegistrarCliente(&sistema);
                         break;
+
                     case 1:
                         menuRegistrarVehiculo(&sistema);
                         break;
-                    case 2:
-                        endwin();
+
+                        // LISTAR CLIENTES (ejemplo corregido)
+                    case 2: {
+                        salirModoCurses();
                         cout << endl;
                         sistema.listarClientesRegistrados();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+
+                        // Espera exactamente 1 Enter (sin que queden eventos/escapes previos)
+                        std::string dummy;
+                        std::getline(cin, dummy);
+
+                        entrarModoCurses();
                         break;
-                    case 3:
-                        endwin();
+                    }
+
+                        // LISTAR VEHICULOS DISPONIBLES
+                    case 3: {
+                        salirModoCurses();
                         cout << endl;
                         sistema.listarVehiculosDisponibles();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+
+                        std::string dummy;
+                        std::getline(cin, dummy);
+
+                        entrarModoCurses();
                         break;
-                    case 4:
-                        endwin();
+                    }
+
+                        // LISTAR TODOS LOS VEHICULOS
+                    case 4: {
+                        salirModoCurses();
                         cout << endl;
                         sistema.listarTodosVehiculos();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+
+                        std::string dummy;
+                        std::getline(cin, dummy);
+
+                        entrarModoCurses();
                         break;
+                    }
+
                     case 5:
                         menuCrearContrato(&sistema);
                         break;
+
                     case 6:
                         menuCerrarContrato(&sistema);
                         break;
-                    case 7:
-                        endwin();
+
+                        // LISTAR CONTRATOS
+                    case 7: {
+                        salirModoCurses();
                         cout << endl;
                         sistema.listarContratos();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+
+                        std::string dummy;
+                        std::getline(cin, dummy);
+
+                        entrarModoCurses();
                         break;
-                    case 8:
-                        endwin();
+                    }
+
+                        // MOSTRAR HISTORIAL
+                    case 8: {
+                        salirModoCurses();
                         cout << endl;
                         sistema.mostrarHistorialCompleto();
                         cout << "\nPresiona Enter para continuar...";
-                        cin.ignore();
-                        cin.get();
-                        initscr();
-                        cbreak();
-                        noecho();
-                        keypad(stdscr, TRUE);
+
+                        std::string dummy;
+                        std::getline(cin, dummy);
+
+                        entrarModoCurses();
                         break;
+                    }
+
                     case 9:
                         menuLimpiarBaseDatos();
                         break;
+
                     case 10:
                         mostrarMensaje("SALIR", "Gracias por usar el sistema!");
+                        // asegurar limpieza
+                        printf("\033[?1003l\n");
+                        fflush(stdout);
                         endwin();
                         return;
                 }
                 break;
-        }
-    }
+        } // end switch (ch)
+    } // end while
+
+    // apagar mouse tracking al salir del menu principal (defensivo)
+    printf("\033[?1003l\n");
+    fflush(stdout);
 
     endwin();
 }

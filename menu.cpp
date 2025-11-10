@@ -775,60 +775,6 @@ void funcion_menu() {
 
     cout << "\nIntentando inicializar interfaz grafica..." << endl;
 
-#ifdef _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(hConsole, &csbi);
-
-    int altura = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-    int ancho = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-
-    cout << "Tamanio actual de ventana: " << ancho << "x" << altura << endl;
-
-    if (altura < 25 || ancho < 80) {
-        cout << "Ventana muy pequena. Ajustando..." << endl;
-
-        COORD bufferSize = {80, 30};
-        SetConsoleScreenBufferSize(hConsole, bufferSize);
-
-        SMALL_RECT windowSize = {0, 0, 79, 29};
-        SetConsoleWindowInfo(hConsole, TRUE, &windowSize);
-
-        Sleep(1000);
-
-        GetConsoleScreenBufferInfo(hConsole, &csbi);
-        altura = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-        cout << "Nuevo tamanio: " << (csbi.srWindow.Right - csbi.srWindow.Left + 1) << "x" << altura << endl;
-
-        if (altura < 25) {
-            cout << "\n================================================" << endl;
-            cout << "No se pudo ajustar la ventana automaticamente." << endl;
-            cout << "Por favor MAXIMIZA esta ventana manualmente" << endl;
-            cout << "y presiona Enter para continuar..." << endl;
-            cout << "================================================\n" << endl;
-            cin.get();
-
-            GetConsoleScreenBufferInfo(hConsole, &csbi);
-            altura = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-
-            if (altura < 10) {
-                cout << "La ventana sigue siendo muy pequena." << endl;
-                Sleep(2000);
-                return;
-            }
-        }
-    }
-#endif
-
-    WINDOW* mainwin = initscr();
-    if (mainwin == NULL) {
-        cout << "\n================================================" << endl;
-        cout << "No se pudo inicializar la interfaz curses." << endl;
-        cout << "================================================\n" << endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-        return;
-    }
-
     cbreak();
     noecho();
     keypad(stdscr, TRUE);

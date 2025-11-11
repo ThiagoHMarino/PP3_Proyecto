@@ -1,7 +1,6 @@
 #include "menu.h"
 #include "Archivo.h"
 #include "database.h"
-
 // ============================================
 // INCLUIR LA LIBRERÍA CURSES CORRECTA
 // ============================================
@@ -41,12 +40,31 @@ void flush_input() {
 }
 
 // ============================================
+// DESACTIVAR MOUSE TEMPORALMENTE
+// ============================================
+void desactivarMouse() {
+    printf("\033[?1003l");  // Desactivar mouse tracking
+    fflush(stdout);
+    mousemask(0, NULL);
+    flush_input();
+}
+
+// ============================================
+// REACTIVAR MOUSE
+// ============================================
+void reactivarMouse() {
+    flush_input();
+    mouseinterval(0);
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    printf("\033[?1003h");  // Activar mouse tracking
+    fflush(stdout);
+}
+
+// ============================================
 // SALIR DE CURSES TEMPORALMENTE
 // ============================================
 void salirModoCurses() {
-    printf("\033[?1003l");
-    fflush(stdout);
-    mousemask(0, NULL);
+    desactivarMouse();
 
 #ifndef _WIN32
     usleep(10000);
@@ -73,10 +91,7 @@ void entrarModoCurses() {
     Sleep(10);
 #endif
 
-    mouseinterval(0);
-    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
-    printf("\033[?1003h");
-    fflush(stdout);
+    reactivarMouse();
 
     cbreak();
     noecho();
@@ -113,6 +128,9 @@ bool validarHoras(float horas) {
 // ============= MENÚS CURSES =============
 
 void menuRegistrarCliente(SistemaAlquiler* sistema) {
+    // DESACTIVAR MOUSE AL ENTRAR
+    desactivarMouse();
+
     char nombre[100], apellido[100];
     int edad, dni;
 
@@ -193,7 +211,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 4, x_inicio + 6,const_cast<char*>("%d"), &edad);
+        int resultado = mvscanw(y_inicio + 4, x_inicio + 6, const_cast<char*>("%d"), &edad);
         noecho();
 
         if (resultado != 1 || !validarEdad(edad)) {
@@ -256,9 +274,15 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     mvprintw(y_inicio + 7, continuar_x, "%s", msg_continuar);
     refresh();
     getch();
+
+    // REACTIVAR MOUSE AL SALIR
+    reactivarMouse();
 }
 
 void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
+    // DESACTIVAR MOUSE AL ENTRAR
+    desactivarMouse();
+
     // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -297,6 +321,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 7, cont_x, "%s", msg_continuar);
         refresh();
         getch();
+        reactivarMouse();
         return;
     }
 
@@ -484,9 +509,15 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
     mvprintw(y_inicio + 7, continuar_x, "%s", msg_continuar);
     refresh();
     getch();
+
+    // REACTIVAR MOUSE AL SALIR
+    reactivarMouse();
 }
 
 void menuCrearContrato(SistemaAlquiler* sistema) {
+    // DESACTIVAR MOUSE AL ENTRAR
+    desactivarMouse();
+
     char patente[100];
     int dni;
     float horas;
@@ -611,9 +642,15 @@ void menuCrearContrato(SistemaAlquiler* sistema) {
     mvprintw(y_inicio + 8, continuar_x, "%s", msg_continuar);
     refresh();
     getch();
+
+    // REACTIVAR MOUSE AL SALIR
+    reactivarMouse();
 }
 
 void menuCerrarContrato(SistemaAlquiler* sistema) {
+    // DESACTIVAR MOUSE AL ENTRAR
+    desactivarMouse();
+
     // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -675,9 +712,13 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
         refresh();
         getch();
     }
+    // REACTIVAR MOUSE AL SALIR
+    reactivarMouse();
 }
 
 void menuLimpiarBaseDatos() {
+    // DESACTIVAR MOUSE AL ENTRAR
+    desactivarMouse();
     // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -751,6 +792,8 @@ void menuLimpiarBaseDatos() {
         refresh();
         getch();
     }
+    // REACTIVAR MOUSE AL SALIR
+    reactivarMouse();
 }
 
 // ============= RECUADRO Y CENTRADO =============
@@ -793,6 +836,8 @@ void dibujarRecuadro(int y, int x, int alto, int ancho, const char* titulo = nul
 
 // Muestra un mensaje centrado en un recuadro
 void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruccion = "Presiona cualquier tecla para continuar...") {
+    // DESACTIVAR MOUSE AL ENTRAR
+    desactivarMouse();
     clear();
 
     int max_y, max_x;
@@ -827,6 +872,9 @@ void mostrarMensaje(const char* titulo, const char* mensaje, const char* instruc
 
     refresh();
     getch();
+
+    // REACTIVAR MOUSE AL SALIR
+    reactivarMouse();
 }
 
 // ============= Menú principal =============

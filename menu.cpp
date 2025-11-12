@@ -25,6 +25,9 @@
 #include <thread>
 #include <algorithm>
 #include <cctype>
+#include <limits>
+#include <cstring>
+#include <regex>
 
 using namespace std;
 
@@ -99,54 +102,144 @@ void entrarModoCurses() {
     curs_set(0);
 }
 
-// ============= FUNCIONES DE VALIDACIÓN =============
+// ============= FUNCIONES DE VALIDACIÓN MEJORADAS =============
+
+// Validar que el string no esté vacío ni contenga solo espacios
 bool esStringVacio(const string& str) {
     if (str.empty()) return true;
     return all_of(str.begin(), str.end(), [](unsigned char c) { return isspace(c); });
 }
 
+// Validar que el string solo contenga letras y espacios (para nombres)
+bool validarSoloLetras(const string& str) {
+    if (esStringVacio(str)) return false;
+    for (char c : str) {
+        if (!isalpha(c) && !isspace(c)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Validar longitud mínima y máxima de strings
+bool validarLongitud(const string& str, int min, int max) {
+    int len = str.length();
+    return len >= min && len <= max;
+}
+
+// Validar edad
 bool validarEdad(int edad) {
-    return edad > 0 && edad < 150;
+    return edad >= 18 && edad <= 120;  // Edad mínima 18 para alquilar
 }
 
+// Validar DNI (Argentina: 7-8 dígitos)
 bool validarDNI(int dni) {
-    return dni > 0 && dni < 100000000;
+    return dni >= 1000000 && dni <= 99999999;
 }
 
+// Validar año
 bool validarAnio(int anio) {
-    return anio >= 1900 && anio <= 2025;
+    auto now = chrono::system_clock::now();
+    time_t tt = chrono::system_clock::to_time_t(now);
+    tm local_tm = *localtime(&tt);
+    int anioActual = local_tm.tm_year + 1900;
+
+    return anio >= 1900 && anio <= anioActual + 1;
 }
 
+// Validar precio
 bool validarPrecio(float precio) {
-    return precio > 0;
+    return precio > 0 && precio <= 1000000;  // Precio máximo razonable
 }
 
+// Validar horas
 bool validarHoras(float horas) {
-    return horas > 0;
+    return horas > 0 && horas <= 720;  // Máximo 30 días (720 horas)
 }
 
-// ============= MENÚS CURSES =============
+// Validar patente (formatos argentinos)
+bool validarPatente(const string& patente) {
+    if (esStringVacio(patente)) return false;
+
+    string pat = patente;
+    // Eliminar espacios
+    pat.erase(remove_if(pat.begin(), pat.end(), ::isspace), pat.end());
+
+    // Convertir a mayúsculas
+    transform(pat.begin(), pat.end(), pat.begin(), ::toupper);
+
+    // Formato viejo: ABC123 o AB123CD
+    // Formato nuevo: AB123CD o AA123AA
+    int len = pat.length();
+
+    if (len < 6 || len > 7) return false;
+
+    // Verificar caracteres alfanuméricos
+    for (char c : pat) {
+        if (!isalnum(c)) return false;
+    }
+
+    return true;
+}
+
+// Validar número de puertas
+bool validarPuertas(int puertas) {
+    return puertas >= 2 && puertas <= 5;  // Autos típicos tienen 2-5 puertas
+}
+
+// Validar cilindradas
+bool validarCilindradas(int cilindradas) {
+    return cilindradas >= 50 && cilindradas <= 2000;  // Rango típico de motos
+}
+
+// Validar ID de contrato
+bool validarIdContrato(int id) {
+    return id > 0 && id < 1000000;
+}
+
+// Limpiar entrada numérica (eliminar caracteres no numéricos)
+string limpiarEntradaNumerica(const string& input) {
+    string resultado;
+    for (char c : input) {
+        if (isdigit(c) || c == '.' || c == '-') {
+            resultado += c;
+        }
+    }
+    return resultado;
+}
+
+// Convertir string a mayúsculas
+string toUpper(const string& str) {
+    string resultado = str;
+    transform(resultado.begin(), resultado.end(), resultado.begin(), ::toupper);
+    return resultado;
+}
+
+// Trim espacios al inicio y final
+string trim(const string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r");
+    if (first == string::npos) return "";
+    size_t last = str.find_last_not_of(" \t\n\r");
+    return str.substr(first, (last - first + 1));
+}
+
+// ============= MENÚS CURSES MEJORADOS =============
 
 void menuRegistrarCliente(SistemaAlquiler* sistema) {
-    // DESACTIVAR MOUSE AL ENTRAR
     desactivarMouse();
 
     char nombre[100], apellido[100];
     int edad, dni;
 
-    // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // Calcular dimensiones del menú
-    int menu_ancho = 50;
+    int menu_ancho = 60;
     int menu_alto = 17;
 
-    // Centrar el menú
     int y_inicio = (max_y - menu_alto) / 2;
     int x_inicio = (max_x - menu_ancho) / 2;
 
-    // Mostrar título centrado dentro del menú
     const char* titulo = "=== REGISTRAR NUEVO CLIENTE ===";
     int titulo_len = strlen(titulo);
     int titulo_x = x_inicio + (menu_ancho - titulo_len) / 2;
@@ -160,17 +253,36 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
+        curs_set(1);
         mvgetnstr(y_inicio + 2, x_inicio + 8, nombre, 99);
+        curs_set(0);
         noecho();
 
-        if (esStringVacio(string(nombre))) {
+        string nombreStr = trim(string(nombre));
+
+        if (esStringVacio(nombreStr)) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
             mvprintw(y_inicio + 5, x_inicio, "Error: El nombre no puede estar vacio.");
             mvprintw(y_inicio + 7, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             getch();
+        } else if (!validarSoloLetras(nombreStr)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 5, x_inicio, "Error: El nombre solo puede contener letras.");
+            mvprintw(y_inicio + 7, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else if (!validarLongitud(nombreStr, 2, 50)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 5, x_inicio, "Error: El nombre debe tener entre 2 y 50 caracteres.");
+            mvprintw(y_inicio + 7, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
         } else {
+            strcpy(nombre, nombreStr.c_str());
             nombreValido = true;
         }
     }
@@ -185,17 +297,36 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
+        curs_set(1);
         mvgetnstr(y_inicio + 3, x_inicio + 10, apellido, 99);
+        curs_set(0);
         noecho();
 
-        if (esStringVacio(string(apellido))) {
+        string apellidoStr = trim(string(apellido));
+
+        if (esStringVacio(apellidoStr)) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
             mvprintw(y_inicio + 5, x_inicio, "Error: El apellido no puede estar vacio.");
             mvprintw(y_inicio + 7, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             getch();
+        } else if (!validarSoloLetras(apellidoStr)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 5, x_inicio, "Error: El apellido solo puede contener letras.");
+            mvprintw(y_inicio + 7, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
+        } else if (!validarLongitud(apellidoStr, 2, 50)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 5, x_inicio, "Error: El apellido debe tener entre 2 y 50 caracteres.");
+            mvprintw(y_inicio + 7, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
         } else {
+            strcpy(apellido, apellidoStr.c_str());
             apellidoValido = true;
         }
     }
@@ -207,17 +338,27 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         mvprintw(y_inicio, titulo_x, "%s", titulo);
         mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
         mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
-        mvprintw(y_inicio + 4, x_inicio, "Edad: ");
+        mvprintw(y_inicio + 4, x_inicio, "Edad (minimo 18): ");
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 4, x_inicio + 6, const_cast<char*>("%d"), &edad);
+        curs_set(1);
+        int resultado = mvscanw(y_inicio + 4, x_inicio + 18, const_cast<char*>("%d"), &edad);
+        curs_set(0);
         noecho();
 
-        if (resultado != 1 || !validarEdad(edad)) {
+        if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 6, x_inicio, "Error: La edad debe ser un numero entre 1 y 149.");
+            mvprintw(y_inicio + 6, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 8, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else if (!validarEdad(edad)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 6, x_inicio, "Error: La edad debe estar entre 18 y 120 anos.");
             mvprintw(y_inicio + 8, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
@@ -239,13 +380,23 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 5, x_inicio + 4, const_cast<char*>("%d"), &dni);
+        curs_set(1);
+        int resultado = mvscanw(y_inicio + 5, x_inicio + 19, const_cast<char*>("%d"), &dni);
+        curs_set(0);
         noecho();
 
-        if (resultado != 1 || !validarDNI(dni)) {
+        if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 7, x_inicio, "Error: El DNI debe ser un numero valido.");
+            mvprintw(y_inicio + 7, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 9, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else if (!validarDNI(dni)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 7, x_inicio, "Error: El DNI debe tener entre 7 y 8 digitos.");
             mvprintw(y_inicio + 9, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
@@ -258,7 +409,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     // Registrar cliente
     clear();
     const char* msg_exito = "Cliente registrado exitosamente!";
-    const char* msg_error = "Error: No se pudo registrar el cliente (posiblemente ya existe).";
+    const char* msg_error = "Error: El DNI ya existe en el sistema.";
     const char* msg_continuar = "Presiona cualquier tecla para continuar...";
 
     int msg_x;
@@ -275,23 +426,18 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     refresh();
     getch();
 
-    // REACTIVAR MOUSE AL SALIR
     reactivarMouse();
 }
 
 void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
-    // DESACTIVAR MOUSE AL ENTRAR
     desactivarMouse();
 
-    // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
-    // Calcular dimensiones del menú
     int menu_ancho = 60;
     int menu_alto = 20;
 
-    // Centrar el menú
     int y_inicio = (max_y - menu_alto) / 2;
     int x_inicio = (max_x - menu_ancho) / 2;
 
@@ -305,14 +451,14 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
     mvprintw(y_inicio + 2, x_inicio, "Tipo de vehiculo:");
     mvprintw(y_inicio + 3, x_inicio, "1. Auto");
     mvprintw(y_inicio + 4, x_inicio, "2. Moto");
-    mvprintw(y_inicio + 5, x_inicio, "Selecciona: ");
+    mvprintw(y_inicio + 5, x_inicio, "Selecciona (1 o 2): ");
     refresh();
 
     int tipo = getch() - '0';
 
     if (tipo != 1 && tipo != 2) {
         clear();
-        const char* msg_error = "Opcion invalida.";
+        const char* msg_error = "Opcion invalida. Debe ser 1 o 2.";
         const char* msg_continuar = "Presiona cualquier tecla...";
         int error_x = x_inicio + (menu_ancho - strlen(msg_error)) / 2;
         int cont_x = x_inicio + (menu_ancho - strlen(msg_continuar)) / 2;
@@ -339,17 +485,29 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         refresh();
 
         echo();
+        curs_set(1);
         mvgetnstr(y_inicio + 4, x_inicio + 7, marca, 99);
+        curs_set(0);
         noecho();
 
-        if (esStringVacio(string(marca))) {
+        string marcaStr = trim(string(marca));
+
+        if (esStringVacio(marcaStr)) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
             mvprintw(y_inicio + 6, x_inicio, "Error: La marca no puede estar vacia.");
             mvprintw(y_inicio + 8, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             getch();
+        } else if (!validarLongitud(marcaStr, 2, 50)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 6, x_inicio, "Error: La marca debe tener entre 2 y 50 caracteres.");
+            mvprintw(y_inicio + 8, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
         } else {
+            strcpy(marca, marcaStr.c_str());
             marcaValida = true;
         }
     }
@@ -361,21 +519,33 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         mvprintw(y_inicio, titulo_x, "%s", titulo);
         mvprintw(y_inicio + 2, x_inicio, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
         mvprintw(y_inicio + 4, x_inicio, "Marca: %s", marca);
-        mvprintw(y_inicio + 5, x_inicio, "Patente: ");
+        mvprintw(y_inicio + 5, x_inicio, "Patente (ej: ABC123): ");
         refresh();
 
         echo();
-        mvgetnstr(y_inicio + 5, x_inicio + 9, patente, 99);
+        curs_set(1);
+        mvgetnstr(y_inicio + 5, x_inicio + 22, patente, 99);
+        curs_set(0);
         noecho();
 
-        if (esStringVacio(string(patente))) {
+        string patenteStr = trim(string(patente));
+
+        if (esStringVacio(patenteStr)) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
             mvprintw(y_inicio + 7, x_inicio, "Error: La patente no puede estar vacia.");
             mvprintw(y_inicio + 9, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             getch();
+        } else if (!validarPatente(patenteStr)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 7, x_inicio, "Error: Formato de patente invalido (6-7 caracteres).");
+            mvprintw(y_inicio + 9, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            getch();
         } else {
+            strcpy(patente, toUpper(patenteStr).c_str());
             patenteValida = true;
         }
     }
@@ -388,17 +558,27 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 2, x_inicio, "Tipo: %s", tipo == 1 ? "Auto" : "Moto");
         mvprintw(y_inicio + 4, x_inicio, "Marca: %s", marca);
         mvprintw(y_inicio + 5, x_inicio, "Patente: %s", patente);
-        mvprintw(y_inicio + 6, x_inicio, "Anio: ");
+        mvprintw(y_inicio + 6, x_inicio, "Anio (1900-2026): ");
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 6, x_inicio + 6, const_cast<char*>("%d"), &anio);
+        curs_set(1);
+        int resultado = mvscanw(y_inicio + 6, x_inicio + 18, const_cast<char*>("%d"), &anio);
+        curs_set(0);
         noecho();
 
-        if (resultado != 1 || !validarAnio(anio)) {
+        if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 8, x_inicio, "Error: El anio debe estar entre 1900 y 2025.");
+            mvprintw(y_inicio + 8, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 10, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else if (!validarAnio(anio)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 8, x_inicio, "Error: El anio debe estar entre 1900 y el anio actual.");
             mvprintw(y_inicio + 10, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
@@ -417,17 +597,27 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 4, x_inicio, "Marca: %s", marca);
         mvprintw(y_inicio + 5, x_inicio, "Patente: %s", patente);
         mvprintw(y_inicio + 6, x_inicio, "Anio: %d", anio);
-        mvprintw(y_inicio + 7, x_inicio, "Precio base por hora: ");
+        mvprintw(y_inicio + 7, x_inicio, "Precio por hora ($): ");
         refresh();
 
         echo();
-        int resultado = mvscanw(y_inicio + 7, x_inicio + 22, const_cast<char*>("%f"), &precio);
+        curs_set(1);
+        int resultado = mvscanw(y_inicio + 7, x_inicio + 21, const_cast<char*>("%f"), &precio);
+        curs_set(0);
         noecho();
 
-        if (resultado != 1 || !validarPrecio(precio)) {
+        if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 9, x_inicio, "Error: El precio debe ser mayor a 0.");
+            mvprintw(y_inicio + 9, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 11, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+        } else if (!validarPrecio(precio)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 9, x_inicio, "Error: El precio debe estar entre $0.01 y $1,000,000.");
             mvprintw(y_inicio + 11, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
@@ -448,21 +638,31 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 4, x_inicio, "Marca: %s", marca);
         mvprintw(y_inicio + 5, x_inicio, "Patente: %s", patente);
         mvprintw(y_inicio + 6, x_inicio, "Anio: %d", anio);
-        mvprintw(y_inicio + 7, x_inicio, "Precio base por hora: %.2f", precio);
+        mvprintw(y_inicio + 7, x_inicio, "Precio por hora: $%.2f", precio);
         refresh();
 
         echo();
+        curs_set(1);
         int resultado;
 
         if (tipo == 1) {
-            mvprintw(y_inicio + 8, x_inicio, "Numero de puertas: ");
-            resultado = mvscanw(y_inicio + 8, x_inicio + 19, const_cast<char*>("%d"), &extra);
+            mvprintw(y_inicio + 8, x_inicio, "Numero de puertas (2-5): ");
+            resultado = mvscanw(y_inicio + 8, x_inicio + 25, const_cast<char*>("%d"), &extra);
+            curs_set(0);
             noecho();
 
-            if (resultado != 1 || extra <= 0 || extra > 10) {
+            if (resultado != 1) {
                 clear();
                 mvprintw(y_inicio, titulo_x, "%s", titulo);
-                mvprintw(y_inicio + 10, x_inicio, "Error: El numero de puertas debe ser entre 1 y 10.");
+                mvprintw(y_inicio + 10, x_inicio, "Error: Debe ingresar un numero valido.");
+                mvprintw(y_inicio + 12, x_inicio, "Presiona cualquier tecla para reintentar...");
+                refresh();
+                flushinp();
+                getch();
+            } else if (!validarPuertas(extra)) {
+                clear();
+                mvprintw(y_inicio, titulo_x, "%s", titulo);
+                mvprintw(y_inicio + 10, x_inicio, "Error: El numero de puertas debe estar entre 2 y 5.");
                 mvprintw(y_inicio + 12, x_inicio, "Presiona cualquier tecla para reintentar...");
                 refresh();
                 flushinp();
@@ -472,14 +672,23 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
                 vehiculo = new Auto(string(marca), string(patente), anio, precio, extra);
             }
         } else {
-            mvprintw(y_inicio + 8, x_inicio, "Cilindradas: ");
-            resultado = mvscanw(y_inicio + 8, x_inicio + 13, const_cast<char*>("%d"), &extra);
+            mvprintw(y_inicio + 8, x_inicio, "Cilindradas (50-2000cc): ");
+            resultado = mvscanw(y_inicio + 8, x_inicio + 25, const_cast<char*>("%d"), &extra);
+            curs_set(0);
             noecho();
 
-            if (resultado != 1 || extra <= 0) {
+            if (resultado != 1) {
                 clear();
                 mvprintw(y_inicio, titulo_x, "%s", titulo);
-                mvprintw(y_inicio + 10, x_inicio, "Error: Las cilindradas deben ser mayores a 0.");
+                mvprintw(y_inicio + 10, x_inicio, "Error: Debe ingresar un numero valido.");
+                mvprintw(y_inicio + 12, x_inicio, "Presiona cualquier tecla para reintentar...");
+                refresh();
+                flushinp();
+                getch();
+            } else if (!validarCilindradas(extra)) {
+                clear();
+                mvprintw(y_inicio, titulo_x, "%s", titulo);
+                mvprintw(y_inicio + 10, x_inicio, "Error: Las cilindradas deben estar entre 50 y 2000cc.");
                 mvprintw(y_inicio + 12, x_inicio, "Presiona cualquier tecla para reintentar...");
                 refresh();
                 flushinp();
@@ -493,7 +702,7 @@ void menuRegistrarVehiculo(SistemaAlquiler* sistema) {
 
     clear();
     const char* msg_exito = "Vehiculo registrado exitosamente!";
-    const char* msg_error = "Error: No se pudo registrar el vehiculo.";
+    const char* msg_error = "Error: La patente ya existe en el sistema.";
     const char* msg_continuar = "Presiona cualquier tecla para continuar...";
 
     int msg_x;

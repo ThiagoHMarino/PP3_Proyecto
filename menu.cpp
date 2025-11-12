@@ -157,7 +157,7 @@ bool validarHoras(float horas) {
     return horas > 0 && horas <= 720;  // Máximo 30 días (720 horas)
 }
 
-// Validar patente (formatos argentinos)
+// Validar patente (formatos argentinosS)
 bool validarPatente(const string& patente) {
     if (esStringVacio(patente)) return false;
 

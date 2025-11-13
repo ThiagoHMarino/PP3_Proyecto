@@ -917,7 +917,7 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
             mvprintw(y_inicio + 4, msg_x, "%s", msg_error);
         }
 
-        mvprintw(y_inicio + 11, continuar_x, "%s", msg_continuar);
+        mvprintw(y_inicio + 11, continuar_x+2, "%s", msg_continuar);
         refresh();
         getch();
     }

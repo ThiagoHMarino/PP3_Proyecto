@@ -294,7 +294,6 @@ vector<Cliente*> DataBase::cargarClientes() {
     }
 
     sqlite3_finalize(stmt);
-    mvprintw(0, 0,"Se cargaron %zu clientes ",clientes.size());cout << "Se cargaron " << clientes.size() << " clientes." << endl;
     return clientes;
 }
 
@@ -518,7 +517,6 @@ vector<Vehiculo*> DataBase::cargarVehiculos() {
     }
 
     sqlite3_finalize(stmt);
-    cout << "Se cargaron " << vehiculos.size() << " vehículos." << endl;
     return vehiculos;
 }
 
@@ -645,11 +643,6 @@ void DataBase::cargarHistorial(Historial *historial) {
 
             // Restaurar el inicio del contrato
             contrato->setInicio(inicio_timepoint);
-
-            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
-                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
-        } else {
-            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
         }
 
         if (contrato != nullptr) {
@@ -761,11 +754,6 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
 
             // Restaurar el inicio del contrato
             contrato->setInicio(inicio_timepoint);
-
-            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
-                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
-        } else {
-            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
         }
 
         if (contrato != nullptr) {

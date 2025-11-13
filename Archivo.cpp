@@ -119,6 +119,7 @@ void Contrato::cerrarContrato(){
     fin = system_clock::now();
     duration<float> tiempoReal=fin - inicio;
     duration<float> exceso=tiempoReal-tiempoEstablecido;
+
     // Obtener dimensiones de la pantalla
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
@@ -135,15 +136,19 @@ void Contrato::cerrarContrato(){
     if(exceso.count() > 0){
         float HorasExtra=exceso.count() / 3600.f;
         costo+=HorasExtra*cargoExtraporHora;
-        mvprintw(y_inicio++, x_inicio, "=====================================");
-        mvprintw(y_inicio++, x_inicio, "Tiempo excedido: %.2f horas", HorasExtra);
-        mvprintw(y_inicio++, x_inicio, "Cargo adicional: $%.2f", costo);
-        mvprintw(y_inicio++, x_inicio, "=====================================");
+        const char* msg_t = "Tiempo excedido: %.2f horas";
+        int msg_x1 = x_inicio + (menu_ancho - strlen(msg_t)) / 2;
+        mvprintw(y_inicio+1, msg_x1, msg_t, HorasExtra);
+
+        const char* msg_costoad = "Cargo adicional: $%.2f";
+        int msg_x2 = x_inicio + (menu_ancho - strlen(msg_costoad)) / 2;
+        mvprintw(y_inicio+2, msg_x2, msg_costoad , costo);
     }
     float HorasEstablecidas=tiempoEstablecido.count() / 3600.f;
     costo+=vehiculo->getPrecioBase()*HorasEstablecidas;
-    mvprintw(y_inicio++, x_inicio, "Contrato cerrado. Costo total: $%.2f", costo);
-    mvprintw(y_inicio++, x_inicio, "=====================================");
+    const char* msg_costo = "Contrato cerrado. Costo total: $%.2f";
+    int msg_x = x_inicio + (menu_ancho - strlen(msg_costo)) / 2;
+    mvprintw(y_inicio+3, msg_x, msg_costo, costo);
 }
 void Contrato::mostrarInfo(int& y) const {
 
@@ -290,7 +295,7 @@ void SistemaAlquiler::cargarDatos() {
     mvprintw(y++, 0, "Contratos cargados: %lu", contratos_activos.size());
     refresh();
     database->cargarHistorial(&historial);
-    mvprintw(y++, 0, "Contratos cargados en el historial: %lu", contratos_activos.size());
+    mvprintw(y++, 0, "Contratos cargados en el historial: %lu", historial.getsize());
     refresh();
 
     mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
@@ -466,17 +471,23 @@ void SistemaAlquiler::listarTodosVehiculos() {
 void SistemaAlquiler::listarContratos() {
     clear();
     mvprintw(0, 0,  "=====================================");
-    mvprintw(1, 0,  "TODOS LOS VEHICULOS");
+    mvprintw(1, 0,  "CONTRATOS ACTIVOS");
     mvprintw(2, 0,  "=====================================");
 
     int y = 4;  // posición vertical inicial
 
-    for (Vehiculo* v : vehiculos) {
-        v->mostrarInfo(y);  // tu mostrarInfo ahora usa mvprintw
-        y += 4; // deja espacio entre cada vehículo
+    if (contratos_activos.empty()) {
+        mvprintw(y, 0, "No hay contratos activos.");
+        y++;
+    } else {
+        for (Contrato* c : contratos_activos) {
+            c->mostrarInfo(y);  // mostrarInfo adaptada a ncurses
+            y += 4; // espacio entre contratos
+        }
+        mvprintw(y, 0, "Total contratos activos: %zu", contratos_activos.size());
+        y++;
     }
 
-    mvprintw(y, 0, "Total vehiculos: %zu", vehiculos.size());
     mvprintw(y + 2, 0, "Presiona cualquier tecla para continuar...");
     refresh();
     getch();

@@ -34,7 +34,7 @@ public:
 
     void setPrecioBase(float p);
     void setDisponible(bool a);
-    virtual void mostrarInfo();
+    virtual void mostrarInfo(int );
 };
 
 class Moto: public Vehiculo{
@@ -44,7 +44,7 @@ public:
     Moto(string mar, string pat, int a, float pB, int cil);
 
     int getCilindradas() const;
-    void mostrarInfo() override;
+    void mostrarInfo(int ) override;
 };
 
 class Auto: public Vehiculo{
@@ -54,7 +54,7 @@ public:
     Auto(string mar, string pat, int a, float pB, int puer);
 
     int getPuertas() const;
-    void mostrarInfo() override;
+    void mostrarInfo(int ) override;
 };
 
 class Cliente{
@@ -71,7 +71,7 @@ public:
     int getEdad() const;
     int getDni() const;
 
-    void mostrarInfo() const;
+    void mostrarInfo(int ) const;
 
     ~Cliente(){};
 };
@@ -97,7 +97,7 @@ public:
 
     void iniciarContrato();
     void cerrarContrato();
-    void mostrarInfo() const;
+    void mostrarInfo(int& ) const;
 
     void setcosto(float c){costo=c;}
     void setInicio(time_point<system_clock> t) { inicio = t; }

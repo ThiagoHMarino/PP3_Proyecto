@@ -917,7 +917,7 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
             mvprintw(y_inicio + 4, msg_x, "%s", msg_error);
         }
 
-        mvprintw(y_inicio + 7, continuar_x, "%s", msg_continuar);
+        mvprintw(y_inicio + 11, continuar_x, "%s", msg_continuar);
         refresh();
         getch();
     }
@@ -1096,7 +1096,7 @@ void funcion_menu() {
     SistemaAlquiler sistema(&db);
 
     // === Inicialización segura del entorno curses ===
-    initscr();             // <-- ESTA ES LA CLAVE (antes de usar cbreak/noecho)
+    initscr();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
@@ -1206,24 +1206,18 @@ void funcion_menu() {
                     case 2:
                         salirModoCurses();
                         sistema.listarClientesRegistrados();
-                        cout << "\nPresiona Enter para continuar...";
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         entrarModoCurses();
                         break;
 
                     case 3:
                         salirModoCurses();
                         sistema.listarVehiculosDisponibles();
-                        cout << "\nPresiona Enter para continuar...";
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         entrarModoCurses();
                         break;
 
                     case 4:
                         salirModoCurses();
                         sistema.listarTodosVehiculos();
-                        cout << "\nPresiona Enter para continuar...";
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         entrarModoCurses();
                         break;
 
@@ -1233,16 +1227,12 @@ void funcion_menu() {
                     case 7:
                         salirModoCurses();
                         sistema.listarContratos();
-                        cout << "\nPresiona Enter para continuar...";
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         entrarModoCurses();
                         break;
 
                     case 8:
                         salirModoCurses();
                         sistema.mostrarHistorialCompleto();
-                        cout << "\nPresiona Enter para continuar...";
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         entrarModoCurses();
                         break;
 

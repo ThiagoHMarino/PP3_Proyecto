@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "database.h"
-#include <ncurses.h>
+#include <curses.h>
 #include <algorithm>
 #include <cctype>
 
@@ -46,12 +46,7 @@ bool Vehiculo::getActivo() const {return disponible;}
 float Vehiculo::getPrecioBase() const {return precioBase;}
 void Vehiculo::setDisponible(bool a) {disponible=a;}
 void Vehiculo::setPrecioBase(float p) {precioBase=p;}
-/*void Vehiculo::mostrarInfo() {
-    cout << "=====================================" << endl;
-    cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
-    <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<<endl;
-    cout << "=====================================" << endl;
-}*/
+
 void Vehiculo::mostrarInfo(int y) {
     mvprintw(y, 0,  "=====================================");
     mvprintw(y + 1, 0, "Marca: %s  Patente: %s  Año: %d  Precio Base: %.2f  Disponibilidad: %s",
@@ -69,13 +64,7 @@ int Vehiculo::vivas=0;
 //AUTO
 Auto::Auto(string m, string pat, int a, float pB, int puer):Vehiculo(m,pat,a,pB),puertas(puer){}
 
-/*void Auto::mostrarInfo(){
-    cout << "=====================================" << endl;
-    cout << "AUTO" << endl;
-    cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
-        <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<< " PUERTAS: "<< puertas <<endl;
-    cout << "=====================================" << endl;
-}*/
+
 void Auto::mostrarInfo(int y) {
     mvprintw(y, 0,  "=====================================");
     mvprintw(y + 1, 0, "AUTO");
@@ -96,13 +85,7 @@ int Auto::getPuertas() const{return puertas;}
 //MOTO
 Moto::Moto(string m, string pat, int a, float pB, int cil):Vehiculo(m,pat,a,pB),cilindradas(cil){}
 
-/*void Moto::mostrarInfo(){
-    cout << "=====================================" << endl;
-    cout << "MOTO" << endl;
-    cout<<"Marca: "<<marca<<" Patente: "<<patente<<" Año:"<< anio
-        <<" Precio Base: "<< precioBase <<" Disponibilidad: "<<disponible<< " CILINDRADAS: "<< cilindradas <<endl;
-    cout << "=====================================" << endl;
-}*/
+
 void Moto::mostrarInfo(int y) {
     mvprintw(y, 0,  "=====================================");
     mvprintw(y + 1, 0, "MOTO");
@@ -130,29 +113,37 @@ Cliente Contrato::getCliente() const{return cliente;}
 void Contrato::iniciarContrato() {
     inicio = system_clock::now();
     vehiculo->setDisponible(false);
-    mvprintw(0, 0,  "=====================================");
-    mvprintw(1, 0, "Contrato #: %d iniciado", id_contrato);
-    mvprintw(2, 0, "=====================================");
 }
 
 void Contrato::cerrarContrato(){
     fin = system_clock::now();
     duration<float> tiempoReal=fin - inicio;
     duration<float> exceso=tiempoReal-tiempoEstablecido;
-    int y=0;
+    // Obtener dimensiones de la pantalla
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    // Calcular dimensiones del menú
+    int menu_ancho = 60;
+    int menu_alto = 12;
+
+    // Centrar el menú
+    int y_inicio = ((max_y - menu_alto) / 2)+5;
+    int x_inicio = (max_x - menu_ancho) / 2;
+
 
     if(exceso.count() > 0){
         float HorasExtra=exceso.count() / 3600.f;
         costo+=HorasExtra*cargoExtraporHora;
-        mvprintw(y++, 0, "=====================================");
-        mvprintw(y++, 0, "Tiempo excedido: %.2f horas", HorasExtra);
-        mvprintw(y++, 0, "Cargo adicional: $%.2f", costo);
-        mvprintw(y++, 0, "=====================================");
+        mvprintw(y_inicio++, x_inicio, "=====================================");
+        mvprintw(y_inicio++, x_inicio, "Tiempo excedido: %.2f horas", HorasExtra);
+        mvprintw(y_inicio++, x_inicio, "Cargo adicional: $%.2f", costo);
+        mvprintw(y_inicio++, x_inicio, "=====================================");
     }
     float HorasEstablecidas=tiempoEstablecido.count() / 3600.f;
     costo+=vehiculo->getPrecioBase()*HorasEstablecidas;
-    mvprintw(y++, 0, "Contrato cerrado. Costo total: $%.2f", costo);
-    mvprintw(y++, 0, "=====================================");
+    mvprintw(y_inicio++, x_inicio, "Contrato cerrado. Costo total: $%.2f", costo);
+    mvprintw(y_inicio++, x_inicio, "=====================================");
 }
 void Contrato::mostrarInfo(int& y) const {
 

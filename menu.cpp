@@ -912,7 +912,7 @@ void menuCerrarContrato(SistemaAlquiler* sistema) {
             int msg_x = x_inicio + (menu_ancho - strlen(msg_exito)) / 2;
             mvprintw(y_inicio + 4, msg_x, "%s", msg_exito);
         } else {
-            const char* msg_error = "Error: No se pudo cerrar el contrato.";
+            const char* msg_error = "Error: No se pudo cerrar el contrato. ID no encontrado";
             int msg_x = x_inicio + (menu_ancho - strlen(msg_error)) / 2;
             mvprintw(y_inicio + 4, msg_x, "%s", msg_error);
         }

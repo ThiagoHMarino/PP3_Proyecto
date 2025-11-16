@@ -121,13 +121,7 @@ int main() {
 
     delete db;  // Cierra la conexión antes de salir
 
-    std::cout << "Presiona Enter para continuar..." << std::endl;
-    std::cin.get();
-
-    cout << endl;
-    cout << "==================================================" << endl;
-    cout << "   Gracias por usar el sistema!" << endl;
-    cout << "==================================================" << endl;
+    mvprintw(0, 0,"Presiona enter para continuar");
 
     return 0;
 }

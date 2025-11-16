@@ -3,6 +3,9 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <ncurses.h>
+#include <algorithm>
+#include <cctype>
 
 using namespace std;
 
@@ -269,7 +272,7 @@ vector<Cliente*> DataBase::cargarClientes() {
     vector<Cliente*> clientes;
 
     if(datab == nullptr) {
-        cout << "Error: Base de datos no inicializada." << endl;
+        mvprintw(0, 0, "Error: Base de datos no inicializada.");
         return clientes;
     }
 
@@ -277,7 +280,7 @@ vector<Cliente*> DataBase::cargarClientes() {
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
-        cout << "Error preparando carga de clientes: " << sqlite3_errmsg(datab) << endl;
+        mvprintw(0, 0,"Error preparando carga de clientes: ");
         return clientes;
     }
 
@@ -291,7 +294,6 @@ vector<Cliente*> DataBase::cargarClientes() {
     }
 
     sqlite3_finalize(stmt);
-    cout << "Se cargaron " << clientes.size() << " clientes." << endl;
     return clientes;
 }
 
@@ -515,7 +517,6 @@ vector<Vehiculo*> DataBase::cargarVehiculos() {
     }
 
     sqlite3_finalize(stmt);
-    cout << "Se cargaron " << vehiculos.size() << " vehículos." << endl;
     return vehiculos;
 }
 
@@ -642,11 +643,6 @@ void DataBase::cargarHistorial(Historial *historial) {
 
             // Restaurar el inicio del contrato
             contrato->setInicio(inicio_timepoint);
-
-            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
-                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
-        } else {
-            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
         }
 
         if (contrato != nullptr) {
@@ -758,11 +754,6 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
 
             // Restaurar el inicio del contrato
             contrato->setInicio(inicio_timepoint);
-
-            cout << "Contrato #" << id_contrato << " cargado (Cliente: "
-                 << nombre << ", Vehículo: " << patente << ", Inicio restaurado)" << endl;
-        } else {
-            cout << "Advertencia: Contrato #" << id_contrato << " sin tiempo de inicio válido" << endl;
         }
 
         if (contrato != nullptr) {

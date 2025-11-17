@@ -1,41 +1,79 @@
+import sqlite3
 import pandas as pd
-import os
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+import numpy as np
 
-BASE = "bd_vehiculos.json"
+DB = "mi_base.db"
 
-print("\n===============================")
-print(" ANALISIS DE RENTABILIDAD")
-print("===============================\n")
+print("\n=============================================")
+print(" ANALISIS DE RENTABILIDAD + REGRESIÓN LINEAL")
+print("=============================================\n")
 
-if not os.path.exists(BASE):
-    print("ERROR: No se encontró el archivo de vehículos.")
-    exit()
+# ================================
+# 1. Cargar datos de SQLite
+# ================================
+con = sqlite3.connect(DB)
 
-df = pd.read_json(BASE)
+query = """
+SELECT 
+    v.patente,
+    v.anio,
+    v.precioBase,
+    SUM(c.costo + c.cargo_extra) AS ingreso_total
+FROM vehiculos v
+LEFT JOIN contrato c ON c.patente = v.patente
+GROUP BY v.patente;
+"""
 
-# Rentabilidad = ingresos totales - precio base
-if "ingreso_total" not in df.columns:
-    df["ingreso_total"] = 0
+df = pd.read_sql_query(query, con)
+con.close()
 
-df["rentabilidad"] = df["ingreso_total"] - df["precio_base"]
+df["ingreso_total"] = df["ingreso_total"].fillna(0)
+df["rentabilidad"] = df["ingreso_total"] - df["precioBase"]
 
-# Ordenamos de menor a mayor
-df_sorted = df.sort_values(by="rentabilidad")
+print(df)
 
-# Mostrar los 5 menos rentables
-print("Vehículos MENOS rentables:")
-print("---------------------------")
-for i, row in df_sorted.head(5).iterrows():
-    print(f"Patente: {row['patente']}  | Marca: {row['marca']}  | Año: {row['anio']}")
-    print(f"Precio base:     ${row['precio_base']}")
-    print(f"Ingreso total:   ${row['ingreso_total']}")
-    print(f"Rentabilidad:    ${row['rentabilidad']}")
-    print("→ Sugerencia: Considerar ajuste de precio o promoción.\n")
+# ================================
+# 2. Preparar datos para regresión
+# ================================
+X = df[["anio"]]
+y = df["rentabilidad"]
 
-# Agrupación por marca
-print("\nRentabilidad por marca:\n------------------------")
-print(df.groupby("marca")["rentabilidad"].mean())
+modelo = LinearRegression()
+modelo.fit(X, y)
 
-# Agrupación por año
-print("\nRentabilidad por año:\n------------------------")
-print(df.groupby("anio")["rentabilidad"].mean())
+# ================================
+# 3. Mostrar coeficientes
+# ================================
+print("\nModelo entrenado:")
+print("-----------------")
+print(f"Coeficiente (pendiente): {modelo.coef_[0]:.2f}")
+print(f"Intersección: {modelo.intercept_:.2f}")
+
+def predecir(anio):
+    pred = modelo.predict([[anio]])[0]
+    print(f"\nRentabilidad estimada para año {anio}: ${pred:.2f}")
+
+# Ejemplo
+predecir(2018)
+
+# ================================
+# 4. Graficar datos reales + recta
+# ================================
+plt.figure(figsize=(8, 5))
+
+# Datos reales
+plt.scatter(df["anio"], df["rentabilidad"])
+
+# Recta de regresión
+x_line = np.linspace(df["anio"].min(), df["anio"].max(), 100).reshape(-1, 1)
+y_line = modelo.predict(x_line)
+plt.plot(x_line, y_line)
+
+plt.title("Rentabilidad vs Año (con regresión lineal)")
+plt.xlabel("Año del vehículo")
+plt.ylabel("Rentabilidad ($)")
+plt.grid(True)
+
+plt.show()

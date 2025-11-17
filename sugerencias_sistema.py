@@ -1,48 +1,73 @@
+import sqlite3
 import pandas as pd
-import os
+from sklearn.neighbors import NearestNeighbors
 
-CLIENTES = "bd_clientes.json"
-VEHICULOS = "bd_vehiculos.json"
-CONTRATOS = "bd_contratos.json"
+DB = "mi_base.db"
 
 print("\n===============================")
-print(" SUGERENCIAS INTELIGENTES")
+print("     SISTEMA DE SUGERENCIAS")
 print("===============================\n")
 
-if not all(os.path.exists(f) for f in [CLIENTES, VEHICULOS, CONTRATOS]):
-    print("ERROR: Falta algún archivo JSON.")
-    exit()
+# ---------------------------
+# Cargar datos combinados
+# ---------------------------
 
-df_cli = pd.read_json(CLIENTES)
-df_veh = pd.read_json(VEHICULOS)
-df_con = pd.read_json(CONTRATOS)
+con = sqlite3.connect(DB)
 
-# Merge para análisis cruzado
-df = df_con.merge(df_cli, on="dni").merge(df_veh, on="patente")
+query = """
+SELECT 
+    c.dni_cliente,
+    cli.edad,
+    co.patente,
+    veh.precioBase,
+    co.costo,
+    co.cargo_extra,
+    co.tiempo_establecido
+FROM contrato co
+JOIN clientes cli ON cli.dni = co.dni_cliente
+JOIN vehiculos veh ON veh.patente = co.patente;
+"""
 
-print("1) RELACIÓN ENTRE EDAD Y MARCA ELEGIDA")
-print("--------------------------------------")
-marca_por_edad = df.groupby("marca")["edad"].mean().sort_values()
-print(marca_por_edad)
-print("\nInterpretación:")
-print("- Marcas asociadas a edades menores → buena idea promocionar en redes.")
-print("- Marcas asociadas a edades mayores → paquetes de fidelización.\n")
+df = pd.read_sql_query(query, con)
+con.close()
 
-print("2) TIEMPOS ESTABLECIDOS MÁS POPULARES")
-print("--------------------------------------")
-populares = df["tiempo_establecido"].value_counts()
-print(populares)
+# ---------------------------
+# Preparar datos
+# ---------------------------
 
-print("\n3) QUE TIPO GENERA MÁS INGRESOS: AUTO VS MOTO")
-print("---------------------------------------------")
-print(df.groupby("tipo")["costo_final"].sum())
+# Para similitud de clientes usamos:
+# edad, costo, cargo extra, duracion
+X = df[["edad", "costo", "cargo_extra", "tiempo_establecido"]]
 
-print("\n4) RECOMENDACIÓN DE PRECIOS")
-print("------------------------------")
-rentabilidad = df_veh["ingreso_total"] - df_veh["precio_base"]
-if rentabilidad.mean() < 0:
-    print("→ En promedio, los vehículos están generando pérdida. Considerar aumentar precios.")
-elif rentabilidad.mean() < 2000:
-    print("→ Rentabilidad baja: revisar marcas con peor rendimiento.")
-else:
-    print("→ Buen rendimiento general. Mantener precios.")
+# Entrenamos KNN
+knn = NearestNeighbors(n_neighbors=3)
+knn.fit(X)
+
+# ---------------------------
+# Función de recomendación
+# ---------------------------
+
+def recomendar(edad, costo_prev, extra_prev, tiempo_prev):
+    nuevo = [[edad, costo_prev, extra_prev, tiempo_prev]]
+    distancias, indices = knn.kneighbors(nuevo)
+
+    similares = df.iloc[indices[0]]
+
+    # El vehículo más repetido entre los similares
+    recomendacion = (similares["patente"]
+                     .value_counts()
+                     .idxmax())
+
+    print(f"\nCliente similar → Recomendar vehículo: {recomendacion}")
+
+# ---------------------------
+# Ejemplo
+# ---------------------------
+
+print("Ejemplo de recomendación para:")
+print("- Edad: 30")
+print("- Costo típico: 12000")
+print("- Extra promedio: 50")
+print("- Tiempo: 7 días")
+
+recomendar(30, 12000, 50, 7)

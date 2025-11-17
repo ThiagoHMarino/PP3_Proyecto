@@ -705,9 +705,9 @@ Contrato* SistemaAlquiler::crearNuevoContrato(int dni, string patente, float hor
 
     Vehiculo* vehiculo = buscarVehiculo(patente);
     if (vehiculo == nullptr) {
-        mvprintw(y++, 0, "Error: Vehiculo con patente %s no encontrado.", patente.c_str());
-        mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
-        getch();
+        //mvprintw(y++, 0, "Error: Vehiculo con patente %s no encontrado.", patente.c_str());
+        //mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
+        //getch();
         return nullptr;
     }
 

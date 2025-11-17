@@ -485,7 +485,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         if (!validarEdad(edad)) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 11, x_inicio, "Error: Debe ser mayor de 18 anos para alquilar.");
+            mvprintw(y_inicio + 11, x_inicio, "Error: Debe ser mayor de 18 años para alquilar.");
             mvprintw(y_inicio + 12, x_inicio, "Edad calculada: %d anos", edad);
             mvprintw(y_inicio + 14, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
@@ -505,7 +505,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         mvprintw(y_inicio, titulo_x, "%s", titulo);
         mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
         mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
-        mvprintw(y_inicio + 4, x_inicio, "Fecha Nac: %02d/%02d/%d (Edad: %d anos)", dia, mes, anio, edad);
+        mvprintw(y_inicio + 4, x_inicio, "Fecha Nac: %02d/%02d/%d (Edad: %d años)", dia, mes, anio, edad);
         mvprintw(y_inicio + 6, x_inicio, "DNI: ");
         refresh();
 
@@ -548,7 +548,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 5, msg_x, "%s", msg_exito);
         mvprintw(y_inicio + 7, x_inicio, "Nombre: %s %s", nombre, apellido);
         mvprintw(y_inicio + 8, x_inicio, "Fecha Nac: %02d/%02d/%d", dia, mes, anio);
-        mvprintw(y_inicio + 9, x_inicio, "Edad: %d anos", edad);
+        mvprintw(y_inicio + 9, x_inicio, "Edad: %d años", edad);
         mvprintw(y_inicio + 10, x_inicio, "DNI: %d", dni);
     } else {
         msg_x = x_inicio + (menu_ancho - strlen(msg_error)) / 2;

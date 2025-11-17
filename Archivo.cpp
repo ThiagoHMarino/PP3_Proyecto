@@ -697,9 +697,9 @@ Contrato* SistemaAlquiler::crearNuevoContrato(int dni, string patente, float hor
 
     Cliente* cliente = buscarCliente(dni);
     if (cliente == nullptr) {
-        mvprintw(y++, 0, "Error: Cliente con DNI %d no encontrado.", dni);
-        mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
-        getch();
+        //mvprintw(y++, 0, "Error: Cliente con DNI %d no encontrado.", dni);
+        //mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
+        //getch();
         return nullptr;
     }
 
@@ -712,9 +712,9 @@ Contrato* SistemaAlquiler::crearNuevoContrato(int dni, string patente, float hor
     }
 
     if (!vehiculo->getActivo()) {
-        mvprintw(y++, 0, "Error: Vehiculo no disponible.");
-        mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
-        getch();
+        //mvprintw(y++, 0, "Error: Vehiculo no disponible.");
+        //mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
+        //getch();
         return nullptr;
     }
 

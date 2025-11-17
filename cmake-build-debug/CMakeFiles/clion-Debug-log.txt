@@ -8,6 +8,7 @@ CMake Deprecation Warning:
   use the cmake-file-api(7) to view CMake-generated project build trees.
 
 
+-- Sistema detectado: macOS - usando ncurses
 -- Configuring done (0.1s)
 -- Generating done (0.0s)
 -- Build files have been written to: /Users/thiagomarino/CLionProjects/PP3_Proyecto/cmake-build-debug

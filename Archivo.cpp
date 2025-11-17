@@ -746,7 +746,7 @@ bool SistemaAlquiler::cerrarContrato(int id_contrato) {
         }
     }
 
-    return true;
+    return true; //
 }
 
 void SistemaAlquiler::mostrarHistorialCompleto() {

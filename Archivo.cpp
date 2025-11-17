@@ -710,19 +710,21 @@ Contrato* SistemaAlquiler::crearNuevoContrato(int dni, string patente, float hor
 }
 
 bool SistemaAlquiler::cerrarContrato(int id_contrato) {
-    clear();
-    int y = 0;
+    // COMENTAR O ELIMINAR ESTE BLOQUE COMPLETO:
+    // clear();
+    // int y = 0;
 
     Contrato* contrato = buscarContratoActivo(id_contrato);
 
     if (contrato == nullptr) {
-        mvprintw(y++, 0, "Error: Contrato #%d no encontrado.", id_contrato);
-        mvprintw(y++, 0, "Presiona cualquier tecla para continuar...");
-        getch();
+        // COMENTAR O ELIMINAR ESTAS LÍNEAS:
+        // mvprintw(y++, 0, "Error: Contrato #%d no encontrado.", id_contrato);
+        // mvprintw(y++, 0, "Presiona cualquier tecla para continuar...");
+        // getch();
         return false;
     }
 
-    contrato->cerrarContrato(); // Si esta función también usa cout, deberías pasarlo a ncurses
+    contrato->cerrarContrato();
 
     string patente = contrato->getVehiculo()->getPatente();
     float costo = contrato->getCosto();
@@ -745,7 +747,6 @@ bool SistemaAlquiler::cerrarContrato(int id_contrato) {
     }
 
     return true;
-
 }
 
 void SistemaAlquiler::mostrarHistorialCompleto() {

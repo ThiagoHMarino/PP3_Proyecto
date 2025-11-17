@@ -7,6 +7,8 @@
 #include <string>
 #include <string.h>
 //#include <ncurses.h>
+#include <cstring>
+
 
 //**********************  definicion de funciones modulares para el menu *************************/
 

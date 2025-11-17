@@ -613,26 +613,53 @@ SistemaAlquiler::~SistemaAlquiler() {
 
 void SistemaAlquiler::cargarDatos() {
     clear();
-    int y = 0;
 
-    mvprintw(y++, 0, "Cargando datos desde la base de datos...");
+    // Obtener dimensiones de la pantalla
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    // Calcular dimensiones del menú
+    int menu_ancho = 60;
+    int menu_alto = 10;
+
+    // Centrar el menú
+    int y_inicio = (max_y - menu_alto) / 2;
+    int x_inicio = (max_x - menu_ancho) / 2;
+
+    // Título
+    const char* titulo = "CARGANDO DATOS";
+    int titulo_x = x_inicio + (menu_ancho - strlen(titulo)) / 2;
+
+    mvprintw(y_inicio, titulo_x, "%s", titulo);
+    mvprintw(y_inicio + 1, x_inicio, "%s", string(menu_ancho, '=').c_str());
+
+    int y = y_inicio + 3;
+
+    mvprintw(y++, x_inicio, "Cargando datos desde la base de datos...");
     refresh();
+
     clientes = database->cargarClientes();
-    mvprintw(y++, 0, "Clientes cargados: %lu", clientes.size());
+    mvprintw(y++, x_inicio, "Clientes cargados: %lu", clientes.size());
     refresh();
+
     vehiculos = database->cargarVehiculos();
-    mvprintw(y++, 0, "Vehiculos cargados: %lu", vehiculos.size());
+    mvprintw(y++, x_inicio, "Vehiculos cargados: %lu", vehiculos.size());
     refresh();
+
     contratos_activos = database->cargarContratosActivos();
-    mvprintw(y++, 0, "Contratos cargados: %lu", contratos_activos.size());
+    mvprintw(y++, x_inicio, "Contratos cargados: %lu", contratos_activos.size());
     refresh();
+
     database->cargarHistorial(&historial);
-    mvprintw(y++, 0, "Contratos cargados en el historial: %lu", historial.getsize());
+    mvprintw(y++, x_inicio, "Contratos cargados en el historial: %lu", historial.getsize());
     refresh();
 
-    mvprintw(y+1, 0, "Presiona cualquier tecla para continuar...");
-    getch();
+    const char* msg_continuar = "Presiona cualquier tecla para continuar...";
+    int continuar_x = x_inicio + (menu_ancho - strlen(msg_continuar)) / 2;
+    mvprintw(y + 2, continuar_x, "%s", msg_continuar);
+    refresh();
 
+    getch();
 }
 
 bool SistemaAlquiler::registrarCliente(string nombre, string apellido, int edad, int dni) {

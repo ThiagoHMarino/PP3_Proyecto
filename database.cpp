@@ -6,6 +6,7 @@
 #include <ncurses.h>
 #include <algorithm>
 #include <cctype>
+#include <string.h>
 
 using namespace std;
 

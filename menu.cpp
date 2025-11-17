@@ -28,7 +28,7 @@
 #include <limits>
 #include <cstring>
 #include <regex>
-#include <string.h>
+
 using namespace std;
 
 // ============================================
@@ -223,19 +223,72 @@ string trim(const string& str) {
     return str.substr(first, (last - first + 1));
 }
 
+bool esBisiesto(int anio) {
+    return (anio % 4 == 0 && anio % 100 != 0) || (anio % 400 == 0);
+}
+
+// Validar si una fecha es válida
+bool validarFecha(int dia, int mes, int anio) {
+    // Validar mes
+    if (mes < 1 || mes > 12) return false;
+
+    // Obtener año actual
+    auto now = chrono::system_clock::now();
+    time_t tt = chrono::system_clock::to_time_t(now);
+    tm local_tm = *localtime(&tt);
+    int anioActual = local_tm.tm_year + 1900;
+
+    // Validar año (persona debe haber nacido entre 1900 y año actual)
+    if (anio < 1900 || anio > anioActual) return false;
+
+    // Días por mes
+    int diasPorMes[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    // Ajustar febrero si es bisiesto
+    if (esBisiesto(anio)) {
+        diasPorMes[1] = 29;
+    }
+
+    // Validar día
+    if (dia < 1 || dia > diasPorMes[mes - 1]) return false;
+
+    return true;
+}
+
+// Calcular edad a partir de fecha de nacimiento
+int calcularEdad(int dia, int mes, int anio) {
+    // Obtener fecha actual
+    auto now = chrono::system_clock::now();
+    time_t tt = chrono::system_clock::to_time_t(now);
+    tm local_tm = *localtime(&tt);
+
+    int diaActual = local_tm.tm_mday;
+    int mesActual = local_tm.tm_mon + 1; // tm_mon es 0-11
+    int anioActual = local_tm.tm_year + 1900;
+
+    // Calcular edad
+    int edad = anioActual - anio;
+
+    // Ajustar si aún no cumplió años este año
+    if (mesActual < mes || (mesActual == mes && diaActual < dia)) {
+        edad--;
+    }
+
+    return edad;
+}
 // ============= MENÚS CURSES MEJORADOS =============
 
 void menuRegistrarCliente(SistemaAlquiler* sistema) {
     desactivarMouse();
 
     char nombre[100], apellido[100];
-    int edad, dni;
+    int dia, mes, anio, edad;
 
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
 
     int menu_ancho = 60;
-    int menu_alto = 17;
+    int menu_alto = 20;
 
     int y_inicio = (max_y - menu_alto) / 2;
     int x_inicio = (max_x - menu_ancho) / 2;
@@ -331,73 +384,150 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         }
     }
 
-    // Pedir y validar EDAD
-    bool edadValida = false;
-    while (!edadValida) {
+    // Pedir y validar FECHA DE NACIMIENTO
+    bool fechaValida = false;
+    while (!fechaValida) {
         clear();
         mvprintw(y_inicio, titulo_x, "%s", titulo);
         mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
         mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
-        mvprintw(y_inicio + 4, x_inicio, "Edad (minimo 18): ");
+        mvprintw(y_inicio + 5, x_inicio, "=== FECHA DE NACIMIENTO ===");
+        mvprintw(y_inicio + 7, x_inicio, "Dia (1-31): ");
         refresh();
 
         echo();
         curs_set(1);
-        int resultado = mvscanw(y_inicio + 4, x_inicio + 18, const_cast<char*>("%d"), &edad);
+        int resultado = mvscanw(y_inicio + 7, x_inicio + 12, const_cast<char*>("%d"), &dia);
         curs_set(0);
         noecho();
 
         if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 6, x_inicio, "Error: Debe ingresar un numero valido.");
-            mvprintw(y_inicio + 8, x_inicio, "Presiona cualquier tecla para reintentar...");
+            mvprintw(y_inicio + 9, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 11, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
             getch();
-        } else if (!validarEdad(edad)) {
+            continue;
+        }
+
+        clear();
+        mvprintw(y_inicio, titulo_x, "%s", titulo);
+        mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
+        mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
+        mvprintw(y_inicio + 5, x_inicio, "=== FECHA DE NACIMIENTO ===");
+        mvprintw(y_inicio + 7, x_inicio, "Dia: %d", dia);
+        mvprintw(y_inicio + 8, x_inicio, "Mes (1-12): ");
+        refresh();
+
+        echo();
+        curs_set(1);
+        resultado = mvscanw(y_inicio + 8, x_inicio + 12, const_cast<char*>("%d"), &mes);
+        curs_set(0);
+        noecho();
+
+        if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 6, x_inicio, "Error: La edad debe estar entre 18 y 120 anos.");
-            mvprintw(y_inicio + 8, x_inicio, "Presiona cualquier tecla para reintentar...");
+            mvprintw(y_inicio + 10, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 12, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
             getch();
-        } else {
-            edadValida = true;
+            continue;
         }
+
+        clear();
+        mvprintw(y_inicio, titulo_x, "%s", titulo);
+        mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
+        mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
+        mvprintw(y_inicio + 5, x_inicio, "=== FECHA DE NACIMIENTO ===");
+        mvprintw(y_inicio + 7, x_inicio, "Dia: %d", dia);
+        mvprintw(y_inicio + 8, x_inicio, "Mes: %d", mes);
+        mvprintw(y_inicio + 9, x_inicio, "Anio (mayor a 1990): ");
+        refresh();
+
+        echo();
+        curs_set(1);
+        resultado = mvscanw(y_inicio + 9, x_inicio + 21, const_cast<char*>("%d"), &anio);
+        curs_set(0);
+        noecho();
+
+        if (resultado != 1) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 11, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 13, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+            continue;
+        }
+
+        // Validar fecha
+        if (!validarFecha(dia, mes, anio)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 11, x_inicio, "Error: Fecha invalida.");
+            mvprintw(y_inicio + 12, x_inicio, "Verifica que el dia, mes y anio sean correctos.");
+            mvprintw(y_inicio + 14, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+            continue;
+        }
+
+        // Calcular edad
+        edad = calcularEdad(dia, mes, anio);
+
+        // Validar edad mínima
+        if (!validarEdad(edad)) {
+            clear();
+            mvprintw(y_inicio, titulo_x, "%s", titulo);
+            mvprintw(y_inicio + 11, x_inicio, "Error: Debe ser mayor de 18 anos para alquilar.");
+            mvprintw(y_inicio + 12, x_inicio, "Edad calculada: %d anos", edad);
+            mvprintw(y_inicio + 14, x_inicio, "Presiona cualquier tecla para reintentar...");
+            refresh();
+            flushinp();
+            getch();
+            continue;
+        }
+
+        fechaValida = true;
     }
 
     // Pedir y validar DNI
+    int dni;
     bool dniValido = false;
     while (!dniValido) {
         clear();
         mvprintw(y_inicio, titulo_x, "%s", titulo);
         mvprintw(y_inicio + 2, x_inicio, "Nombre: %s", nombre);
         mvprintw(y_inicio + 3, x_inicio, "Apellido: %s", apellido);
-        mvprintw(y_inicio + 4, x_inicio, "Edad: %d", edad);
-        mvprintw(y_inicio + 5, x_inicio, "DNI: ");
+        mvprintw(y_inicio + 4, x_inicio, "Fecha Nac: %02d/%02d/%d (Edad: %d anos)", dia, mes, anio, edad);
+        mvprintw(y_inicio + 6, x_inicio, "DNI: ");
         refresh();
 
         echo();
         curs_set(1);
-        int resultado = mvscanw(y_inicio + 5, x_inicio + 19, const_cast<char*>("%d"), &dni);
+        int resultado = mvscanw(y_inicio + 6, x_inicio + 5, const_cast<char*>("%d"), &dni);
         curs_set(0);
         noecho();
 
         if (resultado != 1) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 7, x_inicio, "Error: Debe ingresar un numero valido.");
-            mvprintw(y_inicio + 9, x_inicio, "Presiona cualquier tecla para reintentar...");
+            mvprintw(y_inicio + 8, x_inicio, "Error: Debe ingresar un numero valido.");
+            mvprintw(y_inicio + 10, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
             getch();
         } else if (!validarDNI(dni)) {
             clear();
             mvprintw(y_inicio, titulo_x, "%s", titulo);
-            mvprintw(y_inicio + 7, x_inicio, "Error: El DNI debe tener entre 7 y 8 digitos.");
-            mvprintw(y_inicio + 9, x_inicio, "Presiona cualquier tecla para reintentar...");
+            mvprintw(y_inicio + 8, x_inicio, "Error: El DNI debe tener entre 7 y 8 digitos.");
+            mvprintw(y_inicio + 10, x_inicio, "Presiona cualquier tecla para reintentar...");
             refresh();
             flushinp();
             getch();
@@ -416,13 +546,17 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
     if (sistema->registrarCliente(string(nombre), string(apellido), edad, dni)) {
         msg_x = x_inicio + (menu_ancho - strlen(msg_exito)) / 2;
         mvprintw(y_inicio + 5, msg_x, "%s", msg_exito);
+        mvprintw(y_inicio + 7, x_inicio, "Nombre: %s %s", nombre, apellido);
+        mvprintw(y_inicio + 8, x_inicio, "Fecha Nac: %02d/%02d/%d", dia, mes, anio);
+        mvprintw(y_inicio + 9, x_inicio, "Edad: %d anos", edad);
+        mvprintw(y_inicio + 10, x_inicio, "DNI: %d", dni);
     } else {
         msg_x = x_inicio + (menu_ancho - strlen(msg_error)) / 2;
         mvprintw(y_inicio + 5, msg_x, "%s", msg_error);
     }
 
     int continuar_x = x_inicio + (menu_ancho - strlen(msg_continuar)) / 2;
-    mvprintw(y_inicio + 7, continuar_x, "%s", msg_continuar);
+    mvprintw(y_inicio + 12, continuar_x, "%s", msg_continuar);
     refresh();
     getch();
 

@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <cstring>
+
 
 using namespace std;
 using namespace std::chrono;

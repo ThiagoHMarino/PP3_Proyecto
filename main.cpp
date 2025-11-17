@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cctype>
 #include <thread>
+#include <string.h>
 
 using namespace std;
 

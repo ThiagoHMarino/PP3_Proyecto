@@ -102,6 +102,11 @@ void entrarModoCurses() {
     curs_set(0);
 }
 
+//Funcion de mini-menu IA
+void menuIA(){
+    mvprintw(0, 0, "entrando al menu ia");
+}
+
 // ============= FUNCIONES DE VALIDACIÓN MEJORADAS =============
 
 // Validar que el string no esté vacío ni contenga solo espacios
@@ -1252,6 +1257,7 @@ void funcion_menu() {
             "7. Cerrar Contrato",
             "8. Ver Contratos Activos",
             "9. Ver Historial Completo",
+            "10. ver modelos IA",
             "L. Limpiar Base de Datos",
             "0. Salir"
     };
@@ -1369,10 +1375,13 @@ void funcion_menu() {
                         sistema.mostrarHistorialCompleto();
                         entrarModoCurses();
                         break;
+                    case 9:
+                        menuIA();
+                        break;
 
-                    case 9: menuLimpiarBaseDatos(); break;
+                    case 10: menuLimpiarBaseDatos(); break;
 
-                    case 10:
+                    case 11:
                         mostrarMensaje("SALIR", "Gracias por usar el sistema!");
                         printf("\033[?1003l\n");
                         fflush(stdout);

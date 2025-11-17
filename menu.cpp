@@ -28,6 +28,7 @@
 #include <limits>
 #include <cstring>
 #include <regex>
+#include <string.h>
 
 using namespace std;
 

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <string.h>
 
 void Historial::mostrarHistorial() {
     clear();

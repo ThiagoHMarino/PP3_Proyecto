@@ -531,7 +531,7 @@ void menuRegistrarCliente(SistemaAlquiler* sistema) {
         mvprintw(y_inicio + 5, x_inicio, "=== FECHA DE NACIMIENTO ===");
         mvprintw(y_inicio + 7, x_inicio, "Dia: %d", dia);
         mvprintw(y_inicio + 8, x_inicio, "Mes: %d", mes);
-        mvprintw(y_inicio + 9, x_inicio, "Anio (mayor a 1990): ");
+        mvprintw(y_inicio + 9, x_inicio, "Anio (mayor a 1925): ");
         refresh();
 
         echo();

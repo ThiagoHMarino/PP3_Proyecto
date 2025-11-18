@@ -655,6 +655,11 @@ void SistemaAlquiler::cargarDatos() {
     mvprintw(y++, x_inicio, "Contratos cargados en el historial: %lu", historial.getsize());
     refresh();
 
+    int max_id = database->obtenerMaximoIdContrato();
+    proximo_id_contrato = max_id + 1;
+    //mvprintw(y++, x_inicio, "Proximo ID de contrato: %d", proximo_id_contrato);
+    refresh();
+
     const char* msg_continuar = "Presiona cualquier tecla para continuar...";
     int continuar_x = x_inicio + (menu_ancho - strlen(msg_continuar)) / 2;
     mvprintw(y + 2, continuar_x, "%s", msg_continuar);

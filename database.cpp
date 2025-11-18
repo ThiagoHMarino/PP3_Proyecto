@@ -767,6 +767,35 @@ vector<Contrato*> DataBase::cargarContratosActivos() {
 }
 
 //=============================================================================
+// OBTENER MÁXIMO ID DE CONTRATO
+//=============================================================================
+int DataBase::obtenerMaximoIdContrato() {
+    if (datab == nullptr) {
+        cout << "Error: Base de datos no inicializada." << endl;
+        return 0;
+    }
+
+    string sql = "SELECT MAX(id_contrato) FROM Contrato;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(datab, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        cout << "Error obteniendo máximo ID: " << sqlite3_errmsg(datab) << endl;
+        return 0;
+    }
+
+    int max_id = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        // Si no hay contratos, devuelve NULL que se convierte en 0
+        if (sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
+            max_id = sqlite3_column_int(stmt, 0);
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return max_id;
+}
+
+//=============================================================================
 // DESTRUCTOR
 //=============================================================================
 DataBase::~DataBase() {

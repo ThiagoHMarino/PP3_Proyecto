@@ -56,6 +56,7 @@ public:
     void cargarHistorial(Historial *historial);
     vector<Contrato*> cargarHistorialPorCliente(int dni);
     vector<Contrato*> cargarContratosActivos();
+    int obtenerMaximoIdContrato();  // ← AGREGAR ESTA LÍNEA
 };
 
 #endif //PP3_PROYECTO_DATABASE_H

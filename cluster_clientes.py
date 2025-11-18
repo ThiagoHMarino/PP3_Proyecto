@@ -1,60 +1,39 @@
 import sqlite3
 import pandas as pd
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 
-DB = "mi_base.db"
+def cluster_clientes(db_path):
+    conn = sqlite3.connect(db_path)
 
-print("\n===============================")
-print("   CLUSTERING DE CLIENTES")
-print("===============================\n")
+    # Cargar tablas
+    df_cliente = pd.read_sql_query("SELECT * FROM cliente", conn)
+    df_contrato = pd.read_sql_query("SELECT * FROM contrato", conn)
 
-# ---------------------------
-# Cargar datos desde SQLite
-# ---------------------------
+    conn.close()
 
-con = sqlite3.connect(DB)
+    # Merge por DNI
+    df = df_contrato.merge(df_cliente, left_on="dni_cliente", right_on="dni")
 
-query = """
-SELECT 
-    c.dni,
-    cli.nombre,
-    cli.apellido,
-    cli.edad,
-    SUM(c.costo) AS total_costo,
-    SUM(c.cargo_extra) AS total_extra
-FROM contrato c
-JOIN clientes cli ON cli.dni = c.dni_cliente
-GROUP BY c.dni;
-"""
+    # Gasto total del contrato
+    df["gasto_total"] = df["costo"] + df["cargo_extra"]
 
-df = pd.read_sql_query(query, con)
-con.close()
+    # Datos para cluster
+    X = df[["edad", "gasto_total", "tiempo_establecido"]]
 
-# Si algún cliente no tiene valores → ponerlos en 0
-df["total_costo"] = df["total_costo"].fillna(0)
-df["total_extra"] = df["total_extra"].fillna(0)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
 
-# Datos numéricos para clustering
-X = df[["total_costo", "total_extra"]]
+    # Clustering
+    kmeans = KMeans(n_clusters=3, random_state=0)
+    df["cluster"] = kmeans.fit_predict(X_scaled)
 
-k = 3
-kmeans = KMeans(n_clusters=k, random_state=42)
-df["cluster"] = kmeans.fit_predict(X)
+    print(df[["dni", "edad", "gasto_total", "tiempo_establecido", "cluster"]])
 
-# ---------------------------
-# Mostrar resultados
-# ---------------------------
-
-for i in range(k):
-    grupo = df[df["cluster"] == i]
-    print(f"\n--- CLUSTER {i} ---")
-    print(f"Clientes en este grupo: {len(grupo)}")
-    print(f"Promedio costo total:  ${grupo['total_costo'].mean():.2f}")
-    print(f"Promedio cargos extra: ${grupo['total_extra'].mean():.2f}")
-
-    if grupo["total_extra"].mean() < 50:
-        print("Interpretación: Clientes responsables ✔️")
-    elif grupo["total_extra"].mean() < 200:
-        print("Interpretación: Clientes con retrasos ocasionales ")
-    else:
-        print("Interpretación: Clientes problemáticos ")
+    # Gráfico
+    plt.scatter(df["edad"], df["gasto_total"], c=df["cluster"])
+    plt.xlabel("Edad")
+    plt.ylabel("Gasto total")
+    plt.title("Clusters de clientes")
+    plt.show()

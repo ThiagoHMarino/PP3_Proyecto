@@ -2,72 +2,44 @@ import sqlite3
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
-DB = "mi_base.db"
+def recomendar_vehiculo(db_path, dni_cliente_objetivo, k=3):
+    conn = sqlite3.connect(db_path)
 
-print("\n===============================")
-print("     SISTEMA DE SUGERENCIAS")
-print("===============================\n")
+    df_cliente = pd.read_sql_query("SELECT * FROM cliente", conn)
+    df_contrato = pd.read_sql_query("SELECT * FROM contrato", conn)
+    df_vehiculos = pd.read_sql_query("SELECT * FROM vehiculos", conn)
 
-# ---------------------------
-# Cargar datos combinados
-# ---------------------------
+    conn.close()
 
-con = sqlite3.connect(DB)
+    # Merge global
+    df = df_contrato.merge(df_cliente, left_on="dni_cliente", right_on="dni")
 
-query = """
-SELECT 
-    c.dni_cliente,
-    cli.edad,
-    co.patente,
-    veh.precioBase,
-    co.costo,
-    co.cargo_extra,
-    co.tiempo_establecido
-FROM contrato co
-JOIN clientes cli ON cli.dni = co.dni_cliente
-JOIN vehiculos veh ON veh.patente = co.patente;
-"""
+    df["gasto_total"] = df["costo"] + df["cargo_extra"]
 
-df = pd.read_sql_query(query, con)
-con.close()
+    # Vector del cliente
+    X = df[["edad", "gasto_total", "tiempo_establecido"]]
 
-# ---------------------------
-# Preparar datos
-# ---------------------------
+    neigh = NearestNeighbors(n_neighbors=k)
+    neigh.fit(X)
 
-# Para similitud de clientes usamos:
-# edad, costo, cargo extra, duracion
-X = df[["edad", "costo", "cargo_extra", "tiempo_establecido"]]
+    # Encontrar cliente objetivo
+    cliente_ref = df[df["dni"] == dni_cliente_objetivo]
 
-# Entrenamos KNN
-knn = NearestNeighbors(n_neighbors=3)
-knn.fit(X)
+    if cliente_ref.empty:
+        print("Cliente no encontrado")
+        return
 
-# ---------------------------
-# Función de recomendación
-# ---------------------------
+    vector_cliente = cliente_ref[["edad", "gasto_total", "tiempo_establecido"]].values
 
-def recomendar(edad, costo_prev, extra_prev, tiempo_prev):
-    nuevo = [[edad, costo_prev, extra_prev, tiempo_prev]]
-    distancias, indices = knn.kneighbors(nuevo)
+    # Vecinos más similares
+    distancias, indices = neigh.kneighbors(vector_cliente)
 
-    similares = df.iloc[indices[0]]
+    vecinos = df.iloc[indices[0]]
 
-    # El vehículo más repetido entre los similares
-    recomendacion = (similares["patente"]
-                     .value_counts()
-                     .idxmax())
+    # Vehículos usados por los vecinos
+    recomendaciones = vecinos["patente_vehiculo"].value_counts().head(3).index.tolist()
 
-    print(f"\nCliente similar → Recomendar vehículo: {recomendacion}")
+    print("Vehículos recomendados:", recomendaciones)
 
-# ---------------------------
-# Ejemplo
-# ---------------------------
-
-print("Ejemplo de recomendación para:")
-print("- Edad: 30")
-print("- Costo típico: 12000")
-print("- Extra promedio: 50")
-print("- Tiempo: 7 días")
-
-recomendar(30, 12000, 50, 7)
+    # Mostrar información de esos vehículos
+    print(df_vehiculos[df_vehiculos["patente"].isin(recomendaciones)])

@@ -102,9 +102,86 @@ void entrarModoCurses() {
     curs_set(0);
 }
 
+void dibujarRecuadro(int, int, int, int, const char*);
+
 //Funcion de mini-menu IA
 void menuIA(){
-    mvprintw(0, 0, "entrando al menu ia");
+     int opcion = -1;
+
+    while (true) 
+    {
+        clear();
+
+        // Obtener tamaño de la pantalla
+        int rows, cols;
+        getmaxyx(stdscr, rows, cols);
+
+        // Medidas del recuadro
+        int alto = 12;
+        int ancho = 50;
+
+        // Posición centrada
+        int y = (rows - alto) / 2;
+        int x = (cols - ancho) / 2;
+
+        // Dibujar recuadro
+        dibujarRecuadro(y, x, alto, ancho, "MENU DE PREDICCIONES");
+
+        // Texto dentro del recuadro
+        int baseY = y + 2;
+        int baseX = x + 2;
+
+        std::string op1 = "1 - Prediccion Clientes";
+        std::string op2 = "2 - Rentabilidad de vehiculos";
+        std::string op3 = "3 - Sugerencia de patentes";
+        std::string opSalir = "0 - Volver";
+
+        mvprintw(baseY,     baseX, "%s", op1.c_str());
+        mvprintw(baseY + 1, baseX, "%s", op2.c_str());
+        mvprintw(baseY + 2, baseX, "%s", op3.c_str());
+
+        mvprintw(baseY + 4, baseX, "%s", opSalir.c_str());
+
+      // Pedir opción (centrado)
+      std::string pedir = "Seleccione una opcion: ";
+      mvprintw(baseY + 6, x + (ancho - pedir.size()) / 2, "%s", pedir.c_str());
+
+        refresh();
+        echo();
+        scanw("%d", &opcion);
+        noecho();
+
+        if (opcion == 0) {
+            break;
+        }
+
+        // Apagar ncurses antes de ejecutar Python
+        salirModoCurses();
+
+        switch (opcion)
+        {
+            case 1:
+                system("python3 cluster_clientes.py");
+                break;
+            case 2:
+                system("python3 rentabilidad_vehiculos.py");
+                break;
+            case 3:
+                system("python3 sugerencias_sistema.py");
+                break;
+            default:
+                printf("Opcion invalida.\n");
+                break;
+        }
+
+        printf("\nPresione ENTER para volver al menu...");
+        getchar(); 
+        flushinp();  // limpia cualquier tecla previa
+
+        // Volver a encender ncurses
+        entrarModoCurses();
+        flushinp();  // limpia cualquier tecla previa
+    }
 }
 
 // ============= FUNCIONES DE VALIDACIÓN MEJORADAS =============
@@ -1262,7 +1339,7 @@ void funcion_menu() {
             "0. Salir"
     };
 
-    int n_opciones = 11;
+    int n_opciones = 12;
     int seleccion = 0;
 
     while (true) {

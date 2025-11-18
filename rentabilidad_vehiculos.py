@@ -1,45 +1,51 @@
+#!/usr/bin/env python3
+
 import sqlite3
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import sys
 
-def rentabilidad_vehiculos(db_path):
-    conn = sqlite3.connect(db_path)
+db = sys.argv[1] if len(sys.argv) > 1 else "alquiler.db"
 
-    df_contrato = pd.read_sql_query("SELECT * FROM contrato", conn)
-    df_vehiculo = pd.read_sql_query("SELECT * FROM vehiculos", conn)
+conn = sqlite3.connect(db)
+df_contrato = pd.read_sql_query("SELECT * FROM contrato", conn)
+df_veh = pd.read_sql_query("SELECT * FROM Vehiculo", conn)
+conn.close()
 
-    conn.close()
+print("\n========== RENTABILIDAD Y REGRESIÓN LINEAL ==========\n")
 
-    # Ingresos por cada contrato
-    df_contrato["ingreso_total"] = df_contrato["costo"] + df_contrato["cargo_extra"]
+df_contrato["rentabilidad"] = df_contrato["costo"] + df_contrato["cargo_extra"]
 
-    # Merge vehículo ↔ contrato
-    df = df_contrato.merge(df_vehiculo, left_on="patente_vehiculo", right_on="patente")
+df_r = df_contrato.groupby("patente_vehiculo")["rentabilidad"].sum().reset_index()
+df = df_r.merge(df_veh, left_on="patente_vehiculo", right_on="patente")
 
-    # Rentabilidad real
-    df["rentabilidad"] = df["ingreso_total"] - df["precioBase"]
+X = df[["anio"]]
+y = df["rentabilidad"]
 
-    # Modelo: Año → Rentabilidad
-    X = df[["anio"]]
-    y = df["rentabilidad"]
+modelo = LinearRegression()
+modelo.fit(X, y)
 
-    model = LinearRegression()
-    model.fit(X, y)
+print("Datos utilizados:")
+print(df[["patente", "anio", "rentabilidad"]], "\n")
 
-    # Predicción para gráfico (línea)
-    X_line = np.linspace(df["anio"].min(), df["anio"].max(), 100).reshape(-1, 1)
-    y_line = model.predict(X_line)
+print("Coeficiente:", modelo.coef_[0])
+print("Intercepto:", modelo.intercept_)
 
-    plt.scatter(df["anio"], df["rentabilidad"])
-    plt.plot(X_line, y_line)
-    plt.xlabel("Año del vehículo")
-    plt.ylabel("Rentabilidad")
-    plt.title("Regresión lineal de rentabilidad vs año")
-    plt.show()
+if modelo.coef_[0] > 0:
+    print("\nInterpretación: Vehículos más nuevos generan mayor rentabilidad.\n")
+else:
+    print("\nInterpretación: Vehículos viejos generan mayor rentabilidad.\n")
 
-    # Vehículos menos rentables
-    menos_rentables = df.sort_values("rentabilidad").head()
-    print("Vehículos menos rentables:")
-    print(menos_rentables[["patente", "anio", "rentabilidad"]])
+# Gráfico
+años = np.linspace(df["anio"].min(), df["anio"].max(), 30).reshape(-1, 1)
+pred = modelo.predict(años)
+
+plt.scatter(df["anio"], df["rentabilidad"])
+plt.plot(años, pred)
+plt.xlabel("Año del vehículo")
+plt.ylabel("Rentabilidad total")
+plt.title("Regresión lineal de rentabilidad vs año")
+plt.grid(True)
+plt.show()

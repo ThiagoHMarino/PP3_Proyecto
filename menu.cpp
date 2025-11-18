@@ -106,6 +106,8 @@ void dibujarRecuadro(int, int, int, int, const char*);
 
 //Funcion de mini-menu IA
 void menuIA(){
+
+     desactivarMouse();
      int opcion = -1;
 
     while (true) 
@@ -181,7 +183,9 @@ void menuIA(){
         // Volver a encender ncurses
         entrarModoCurses();
         flushinp();  // limpia cualquier tecla previa
+
     }
+    reactivarMouse();
 }
 
 // ============= FUNCIONES DE VALIDACIÓN MEJORADAS =============
@@ -1334,7 +1338,7 @@ void funcion_menu() {
             "7. Cerrar Contrato",
             "8. Ver Contratos Activos",
             "9. Ver Historial Completo",
-            "10. ver modelos IA",
+            "10. Ver Modelos IA",
             "L. Limpiar Base de Datos",
             "0. Salir"
     };

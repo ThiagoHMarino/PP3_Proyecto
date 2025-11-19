@@ -105,59 +105,85 @@ void entrarModoCurses() {
 void dibujarRecuadro(int, int, int, int, const char*);
 
 //Funcion de mini-menu IA
-void menuIA(){
+void menuIA() {
 
-     desactivarMouse();
-     int opcion = -1;
+    desactivarMouse();
+    int opcion = -1;
 
     while (true) 
     {
         clear();
 
-        // Obtener tamaño de la pantalla
         int rows, cols;
         getmaxyx(stdscr, rows, cols);
 
-        // Medidas del recuadro
-        int alto = 12;
+        int alto = 14;
         int ancho = 50;
 
-        // Posición centrada
         int y = (rows - alto) / 2;
         int x = (cols - ancho) / 2;
 
-        // Dibujar recuadro
         dibujarRecuadro(y, x, alto, ancho, "MENU DE PREDICCIONES");
 
-        // Texto dentro del recuadro
         int baseY = y + 2;
         int baseX = x + 2;
 
         std::string op1 = "1 - Prediccion Clientes";
         std::string op2 = "2 - Rentabilidad de vehiculos";
         std::string op3 = "3 - Sugerencia de patentes";
+        std::string op4 = "4 - Nuevo algoritmo avanzado";
         std::string opSalir = "0 - Volver";
 
-        mvprintw(baseY,     baseX, "%s", op1.c_str());
+        mvprintw(baseY    , baseX, "%s", op1.c_str());
         mvprintw(baseY + 1, baseX, "%s", op2.c_str());
         mvprintw(baseY + 2, baseX, "%s", op3.c_str());
+        mvprintw(baseY + 3, baseX, "%s", op4.c_str());
 
-        mvprintw(baseY + 4, baseX, "%s", opSalir.c_str());
+        mvprintw(baseY + 5, baseX, "%s", opSalir.c_str());
 
-      // Pedir opción (centrado)
-      std::string pedir = "Seleccione una opcion: ";
-      mvprintw(baseY + 6, x + (ancho - pedir.size()) / 2, "%s", pedir.c_str());
+        // Pedir opción centrado
+        std::string pedir = "Seleccione una opcion: ";
+        mvprintw(baseY + 7, x + (ancho - pedir.size()) / 2, "%s", pedir.c_str());
 
         refresh();
+
+        // ============================
+        // VALIDACIÓN DE ENTRADA ROBUSTA
+        // ============================
         echo();
-        scanw("%d", &opcion);
+        char buffer[10];
+        scanw("%9s", buffer);
         noecho();
+
+        // Si ingresan letras → inválido
+        bool es_numero = true;
+        for (int i = 0; buffer[i] != '\0'; i++) {
+            if (!isdigit(buffer[i])) {
+                es_numero = false;
+                break;
+            }
+        }
+
+        if (!es_numero) {
+            mvprintw(baseY + 9, x + 2, "Opcion invalida (solo numeros).");
+            refresh();
+            napms(1200);
+            continue;
+        }
+
+        opcion = atoi(buffer);
+
+        if (opcion < 0 || opcion > 4) {
+            mvprintw(baseY + 9, x + 2, "Opcion invalida.");
+            refresh();
+            napms(1200);
+            continue;
+        }
 
         if (opcion == 0) {
             break;
         }
 
-        // Apagar ncurses antes de ejecutar Python
         salirModoCurses();
 
         switch (opcion)
@@ -171,20 +197,19 @@ void menuIA(){
             case 3:
                 system("python3 sugerencias_sistema.py");
                 break;
-            default:
-                printf("Opcion invalida.\n");
+            case 4:
+                system("python3 detectar_anomalias.py");  // <--- NUEVO
                 break;
         }
 
         printf("\nPresione ENTER para volver al menu...");
-        getchar(); 
-        flushinp();  // limpia cualquier tecla previa
+        getchar();
+        flushinp();
 
-        // Volver a encender ncurses
         entrarModoCurses();
-        flushinp();  // limpia cualquier tecla previa
-
+        flushinp();
     }
+
     reactivarMouse();
 }
 

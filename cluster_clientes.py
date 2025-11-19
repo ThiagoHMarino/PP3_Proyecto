@@ -5,6 +5,12 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import sys
+import shutil
+
+# ----- centrado-----
+def center(text):
+    width = shutil.get_terminal_size().columns
+    return text.center(width)
 
 # ===========================
 # 1. Recibir path
@@ -16,7 +22,7 @@ df_cliente = pd.read_sql_query("SELECT * FROM cliente", conn)
 df_contrato = pd.read_sql_query("SELECT * FROM contrato", conn)
 conn.close()
 
-print("\n========== CLUSTERING DE CLIENTES ==========\n")
+print("\n" + center("========== CLUSTERING DE CLIENTES ==========\n"))
 
 # Crear gasto total por cliente
 df_contrato["gasto"] = df_contrato["costo"] + df_contrato["cargo_extra"]
@@ -24,7 +30,10 @@ df_contrato["gasto"] = df_contrato["costo"] + df_contrato["cargo_extra"]
 df = df_contrato.groupby("dni_cliente")["gasto"].sum().reset_index()
 df = df.merge(df_cliente, left_on="dni_cliente", right_on="dni")
 
-# Variables
+# Edades como int (no float)
+df["edad"] = df["edad"].astype(int)
+
+# Variables para clustering
 X = df[["edad", "gasto"]]
 
 scaler = StandardScaler()
@@ -39,21 +48,37 @@ df["cluster"] = kmeans.fit_predict(X_scaled)
 for i in range(3):
     grupo = df[df["cluster"] == i]
 
-    print(f"\n=== CLUSTER {i} ===")
-    print(f"Cantidad de clientes: {len(grupo)}")
-    print(f"Edad promedio: {grupo['edad'].mean():.2f}")
-    print(f"Gasto promedio: ${grupo['gasto'].mean():.2f}")
+    #print(center(f"\n=== CLUSTER {i+1} ==="))
+    print("\n")
+    print(center(f"=== CLUSTER {i+1} ===\n"))
+    print(center(f"Cantidad de clientes: {len(grupo)}"))
 
-    if grupo["gasto"].mean() < 5000:
-        print("Tipo: Clientes de bajo gasto.")
-    elif grupo["gasto"].mean() < 15000:
-        print("Tipo: Clientes normales.")
+    if len(grupo) > 0:
+        print(center(f"Edad promedio: {grupo['edad'].mean()}"))
+        print(center(f"Gasto promedio: ${grupo['gasto'].mean():.2f}"))
     else:
-        print("Tipo: Clientes de alto gasto.")
+        print(center("Edad promedio: N/A"))
+        print(center("Gasto promedio: N/A"))
 
-    print("\nLista de clientes:")
+    # Tipo de cliente
+    if len(grupo) > 0:
+        prom = grupo["gasto"].mean()
+        if prom < 5000:
+            tipo = "Clientes de bajo gasto."
+        elif prom < 15000:
+            tipo = "Clientes normales."
+        else:
+            tipo = "Clientes de alto gasto."
+    else:
+        tipo = "Sin datos."
+
+    print(center(f"Tipo: {tipo}\n"))
+
+    print(center("Lista de clientes:"))
+
     for _, row in grupo.iterrows():
-        print(f" - {row['nombre']} {row['apellido']} (DNI {row['dni']})")
+        linea = f" - {row['nombre']} {row['apellido']} (DNI {row['dni']})"
+        print(center(linea))
 
-print("\n==========================================\n")
+print("\n" + center("==========================================\n"))
 

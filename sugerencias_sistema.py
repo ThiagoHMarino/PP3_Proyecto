@@ -5,40 +5,52 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
 import sys
+import shutil
 
+# ----- centrado -----
+def center(text):
+    width = shutil.get_terminal_size().columns
+    return text.center(width)
+
+# ----- abrir base -----
 db = sys.argv[1] if len(sys.argv) > 1 else "alquiler.db"
 
 conn = sqlite3.connect(db)
 df = pd.read_sql_query("SELECT * FROM Vehiculo", conn)
 conn.close()
 
-print("\n========== RECOMENDADOR DE VEHÍCULOS ==========\n")
+print("\n" + center("========== RECOMENDADOR DE VEHÍCULOS ==========\n"))
 
-patente = input("Ingrese la patente para recomendar similares: ").strip().upper()
+patente = input(center("Ingrese la patente para recomendar similares: ")).strip().upper()
 
-# --- Caso 1: la patente NO existe → intentar sugerencias similares ---
+
+# ========================================================
+# Caso 1: patente NO existe → sugerencias similares
+# ========================================================
 if patente not in df["patente"].values:
 
     def parecido(a, b):
         if len(a) != len(b):
             return False
         mismatches = sum(1 for x, y in zip(a, b) if x != y)
-        return mismatches <= 2  # permitido hasta 2 diferencias
+        return mismatches <= 2
 
     sugerencias = [p for p in df["patente"].values if parecido(patente, p)]
 
     if not sugerencias:
-        print("\nLa patente no existe y no se encontraron parecidas.\n")
-        exit()
+        print(center("\nLa patente no existe y no se encontraron parecidas.\n"))
+        sys.exit()
 
-    print("\nLa patente no existe. ¿Quizás quiso decir?:\n")
+    print(center("\nLa patente no existe. ¿Quizás quiso decir?:\n"))
     for s in sugerencias:
-        print(" -", s)
+        print(center(" - " + s))
     print()
-    exit()
+    sys.exit()
 
-# --- Caso 2: existe → usar KNN pero sin recomendar cosas absurdas ---
 
+# ========================================================
+# Caso 2: patente existe → KNN con filtros
+# ========================================================
 X = df[["cilindradas", "precioBase", "anio"]]
 
 scaler = StandardScaler()
@@ -51,16 +63,15 @@ idx = df.index[df["patente"] == patente][0]
 
 dist, ind = nn.kneighbors([X_scaled[idx]])
 
-print("\nVehículo consultado:")
-print(df.iloc[idx], "\n")
+print(center("\nVehículo consultado:\n"))
+print(center(str(df.iloc[idx])) + "\n")
 
-print("Recomendaciones:\n")
+print(center("Recomendaciones:\n"))
 
-# Filtro adicional: no recomendar cosas muy diferentes
 for i in ind[0][1:]:
     row = df.iloc[i]
 
-    # Reglas para evitar sugerencias absurdas:
+    # Evitar cosas absurdas
     if abs(row["anio"] - df.loc[idx, "anio"]) > 20:
         continue
     if abs(row["cilindradas"] - df.loc[idx, "cilindradas"]) > 400:
@@ -68,7 +79,8 @@ for i in ind[0][1:]:
     if abs(row["precioBase"] - df.loc[idx, "precioBase"]) > 2000:
         continue
 
-    print(f"- {row['patente']} | {row['marca']} | {row['anio']} | ${row['precioBase']}")
+    linea = f"- {row['patente']} | {row['marca']} | {row['anio']} | ${row['precioBase']}"
+    print(center(linea))
 
-print("\n===============================================\n")
+print("\n" + center("===============================================\n"))
 

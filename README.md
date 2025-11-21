@@ -109,9 +109,11 @@ activo INTEGER DEFAULT 1
 │   ├── database.cpp/h        # Gestión de SQLite
 │   └── sqlite3.c/h           # SQLite embebido
 │
-├── prediction.py             # IA: Predicción de vehículos
-├── prediction2.py            # IA: Clustering
-├── alquiler.db               # Base de datos
+├── cluster_clientes.py               # IA: clustering
+├── rentabilidad_vehiculos.py         # IA: Regresion
+├── sugerencias_sistema.py            # IA: dispersión
+├── detectar_anomalias.py             # IA: reconocimiento de patrones
+├── alquiler.db                       # Base de datos
 ├── CMakeLists.txt            # Configuración de compilación
 └── README.md                 # Documentación
 Este proyecto fue desarrollado como trabajo académico para la materia Paradigmas de Programación III de la Facultad de Ingeniería del Ejército (FIE).
